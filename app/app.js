@@ -565,6 +565,16 @@ function showMenu() {
         getDashboardSubjects();
 
 
+    // Danh sách môn chưa có trên dashboard
+    const availableSubjects =
+        subjects.filter(
+            item =>
+                !dashboardSubjects.includes(
+                    item
+                )
+        );
+
+
     let dashboardHTML = "";
 
 
@@ -646,19 +656,10 @@ function showMenu() {
 
         } else {
 
-            const availableSubjects =
-                subjects.filter(
-                    item =>
-                        !dashboardSubjects.includes(
-                            item
-                        )
-                );
-
-
             let options = `
 
                 <option value="">
-                    -- Chọn môn --
+                    + THÊM MÔN HỌC
                 </option>
 
             `;
@@ -687,7 +688,7 @@ function showMenu() {
 
                     <select
                         class="dashboard-add-select"
-                        onchange="addDashboardSubject(this.value)"
+                        onchange="addDashboardSubject(this.value); this.value='';"
                     >
 
                         ${options}
@@ -1000,19 +1001,6 @@ function createStudyHeader(
 
     return `
 
-        <div class="study-top-area">
-
-            <button
-                id="topNextButton"
-                class="next-button top-next-button"
-                onclick="nextQuestion(event)"
-            >
-                CÂU TIẾP THEO →
-            </button>
-
-        </div>
-
-
         <div class="study-header">
 
             <button
@@ -1041,6 +1029,46 @@ function createStudyHeader(
                 </div>
 
             </div>
+
+        </div>
+
+    `;
+
+}
+
+
+// =====================================
+// THANH ĐIỀU HƯỚNG CUỐI CARD
+// =====================================
+
+function createBottomNav() {
+
+    return `
+
+        <div class="bottom-nav">
+
+            <button
+                type="button"
+                class="bottom-nav-button review"
+                onclick="markNotLearned(event)"
+            >
+
+                <span class="nav-icon">🔴</span>
+                <span class="nav-label">Chưa thuộc</span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="bottom-nav-button next"
+                onclick="nextQuestion(event)"
+            >
+
+                <span class="nav-label">Câu tiếp theo</span>
+                <span class="nav-icon">→</span>
+
+            </button>
 
         </div>
 
@@ -1090,6 +1118,8 @@ function showMCQQuestion(
                     class="answer-choice"
                     onclick="checkMCQAnswer(${index}, event)"
                 >
+
+                    <span class="choice-tick"></span>
 
                     <span class="choice-text">
 
@@ -1143,6 +1173,17 @@ function showMCQQuestion(
                 id="mcqExplanation"
                 class="explanation-section interactive-explanation"
             ></div>
+
+
+            <div
+                id="bottomNav"
+                class="bottom-nav-wrapper"
+                style="display:none;"
+            >
+
+                ${createBottomNav()}
+
+            </div>
 
         </div>
 
@@ -1297,19 +1338,9 @@ function checkMCQAnswer(
         );
 
 
-        feedback.innerHTML = `
-
-            <div class="correct-feedback">
-
-                <div class="feedback-title">
-
-                    ✅ Chính xác!
-
-                </div>
-
-            </div>
-
-        `;
+        // Không hiện chữ "Chính xác",
+        // chỉ tick lên đáp án đúng.
+        feedback.innerHTML = "";
 
 
         explanation.innerHTML = `
@@ -1336,16 +1367,16 @@ function checkMCQAnswer(
         `;
 
 
-        const nextButton =
+        const bottomNav =
             document.getElementById(
-                "topNextButton"
+                "bottomNav"
             );
 
 
-        if (nextButton) {
+        if (bottomNav) {
 
-            nextButton.style.display =
-                "flex";
+            bottomNav.style.display =
+                "block";
 
         }
 
@@ -1489,6 +1520,17 @@ function showFillBlankQuestion(
                 id="fillExplanation"
                 class="explanation-section interactive-explanation"
             ></div>
+
+
+            <div
+                id="bottomNav"
+                class="bottom-nav-wrapper"
+                style="display:none;"
+            >
+
+                ${createBottomNav()}
+
+            </div>
 
         </div>
 
@@ -1646,19 +1688,7 @@ function checkFillBlankAnswer(
         );
 
 
-        feedback.innerHTML = `
-
-            <div class="correct-feedback">
-
-                <div class="feedback-title">
-
-                    ✅ Chính xác!
-
-                </div>
-
-            </div>
-
-        `;
+        feedback.innerHTML = "";
 
 
         explanation.innerHTML = `
@@ -1685,16 +1715,16 @@ function checkFillBlankAnswer(
         `;
 
 
-        const nextButton =
+        const bottomNav =
             document.getElementById(
-                "topNextButton"
+                "bottomNav"
             );
 
 
-        if (nextButton) {
+        if (bottomNav) {
 
-            nextButton.style.display =
-                "flex";
+            bottomNav.style.display =
+                "block";
 
         }
 
@@ -1896,19 +1926,7 @@ function showFlashcardQuestion(
             </div>
 
 
-            <div class="flashcard-actions">
-
-                <button
-                    type="button"
-                    class="review-button"
-                    onclick="markNotLearned(event)"
-                >
-
-                    🔴 CHƯA THUỘC
-
-                </button>
-
-            </div>
+            ${createBottomNav()}
 
         </div>
 

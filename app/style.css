@@ -286,6 +286,24 @@ button:disabled {
     white-space: normal;
 
     overflow-wrap: anywhere;
+
+    font-weight: 700;
+    font-size: 13px;
+
+    text-align: center;
+
+    cursor: pointer;
+}
+
+
+.dashboard-add-select:focus {
+    outline: none;
+
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.10);
 }
 
 
@@ -328,53 +346,6 @@ button:disabled {
 .search-home-button {
     background: #2563eb;
     color: #ffffff;
-}
-
-
-/* =====================================
-   STUDY TOP
-===================================== */
-
-.study-top-area {
-    width: 100%;
-
-    margin-bottom: 12px;
-
-    display: flex;
-
-    justify-content: flex-end;
-
-    align-items: center;
-}
-
-
-.top-next-button {
-    min-height: 42px;
-
-    padding:
-        0 16px;
-
-    border: 0;
-
-    border-radius: 10px;
-
-    background: #2563eb;
-    color: #ffffff;
-
-    font-size: 13px;
-    font-weight: 700;
-
-    align-items: center;
-    justify-content: center;
-
-    white-space: nowrap;
-
-    flex-shrink: 0;
-}
-
-
-.top-next-button:hover {
-    background: #1d4ed8;
 }
 
 
@@ -550,6 +521,8 @@ button:disabled {
 
     align-items: center;
 
+    gap: 10px;
+
     overflow: visible;
 
     white-space: normal;
@@ -563,11 +536,45 @@ button:disabled {
 }
 
 
+/* Ô tick đáp án */
+
+.choice-tick {
+    flex: 0 0 22px;
+
+    width: 22px;
+    height: 22px;
+
+    border-radius: 50%;
+
+    border:
+        2px solid transparent;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+    font-weight: 900;
+
+    color: transparent;
+
+    background: transparent;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+
 .choice-text {
     display: block;
 
     width: 100%;
     min-width: 0;
+
+    flex: 1;
 
     line-height: 1.45;
 
@@ -578,7 +585,7 @@ button:disabled {
 }
 
 
-/* Chỉ đáp án đúng mới xanh */
+/* Đáp án đúng: tô xanh + tick ✓ */
 
 .answer-choice.correct {
     background: #dcfce7;
@@ -586,6 +593,20 @@ button:disabled {
     border-color: #22c55e;
 
     color: #166534;
+}
+
+
+.answer-choice.correct .choice-tick {
+    background: #22c55e;
+
+    border-color: #22c55e;
+
+    color: #ffffff;
+}
+
+
+.answer-choice.correct .choice-tick::before {
+    content: "✓";
 }
 
 
@@ -615,19 +636,6 @@ button:disabled {
     font-weight: 700;
 
     line-height: 1.4;
-}
-
-
-.correct-feedback {
-    width: 100%;
-
-    padding: 12px 14px;
-
-    border-radius: 10px;
-
-    background: #ecfdf5;
-
-    color: #166534;
 }
 
 
@@ -786,30 +794,94 @@ button:disabled {
 }
 
 
-.flashcard-actions {
+/* =====================================
+   BOTTOM NAV (CHƯA THUỘC | CÂU TIẾP THEO)
+===================================== */
+
+.bottom-nav-wrapper {
     width: 100%;
 
     margin-top: 20px;
 }
 
 
-.review-button {
+.bottom-nav {
     width: 100%;
 
-    min-height: 44px;
+    display: flex;
+
+    gap: 10px;
+}
+
+
+.bottom-nav-button {
+    flex: 1 1 0;
+
+    min-width: 0;
+
+    min-height: 48px;
 
     padding:
         10px 14px;
 
-    border: 0;
+    border-radius: 12px;
 
-    border-radius: 10px;
-
-    background: #fff1f2;
-
-    color: #be123c;
+    background: #ffffff;
 
     font-weight: 700;
+
+    font-size: 14px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+}
+
+
+.bottom-nav-button .nav-icon {
+    font-size: 14px;
+
+    line-height: 1;
+}
+
+
+.bottom-nav-button .nav-label {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+.bottom-nav-button.review {
+    border:
+        1px solid #fecdd3;
+
+    color: #be123c;
+}
+
+
+.bottom-nav-button.review:hover {
+    background: #fff1f2;
+}
+
+
+.bottom-nav-button.next {
+    border:
+        1px solid #bfdbfe;
+
+    color: #1d4ed8;
+}
+
+
+.bottom-nav-button.next:hover {
+    background: #eff6ff;
 }
 
 
@@ -1181,25 +1253,6 @@ button.skip-button {
     }
 
 
-    .study-top-area {
-        margin-bottom: 10px;
-    }
-
-
-    .top-next-button {
-        width: 100%;
-
-        min-height: 44px;
-
-        padding:
-            0 12px;
-
-        font-size: 12px;
-
-        border-radius: 10px;
-    }
-
-
     .study-header {
         margin-bottom: 10px;
     }
@@ -1270,6 +1323,20 @@ button.skip-button {
         font-size: 14px;
 
         align-items: flex-start;
+
+        gap: 8px;
+    }
+
+
+    .choice-tick {
+        flex: 0 0 20px;
+
+        width: 20px;
+        height: 20px;
+
+        font-size: 13px;
+
+        margin-top: 1px;
     }
 
 
@@ -1317,6 +1384,28 @@ button.skip-button {
         width: 100%;
 
         min-height: 46px;
+    }
+
+
+    .bottom-nav {
+        gap: 8px;
+    }
+
+
+    .bottom-nav-button {
+        min-height: 46px;
+
+        font-size: 13px;
+
+        padding:
+            8px 10px;
+
+        gap: 6px;
+    }
+
+
+    .bottom-nav-button .nav-label {
+        white-space: nowrap;
     }
 
 
@@ -1391,8 +1480,15 @@ button.skip-button {
     }
 
 
-    .top-next-button {
-        font-size: 11px;
+    .bottom-nav-button {
+        font-size: 12px;
+
+        gap: 4px;
+    }
+
+
+    .bottom-nav-button .nav-icon {
+        font-size: 12px;
     }
 
 }
