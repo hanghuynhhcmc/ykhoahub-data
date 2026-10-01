@@ -306,5 +306,20 @@ button:disabled {
 }
 
 
-/* =*
+/* =====================================
+   NORMAL FLASHCARD
+===================================== */
+
+.flashcard-container {
+    width: 100%;
+    perspective: 1200px;
+}
+
+.flashcard {
+    position: relative;
+
+    width: 100%;
+    height: 560px;
+
+    transform-style: preserve-3d;
 ```
