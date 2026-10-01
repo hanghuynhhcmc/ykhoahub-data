@@ -133,6 +133,8 @@ button:disabled {
     gap: 14px;
 
     margin-bottom: 24px;
+
+    align-items: stretch;
 }
 
 
@@ -152,6 +154,9 @@ button:disabled {
     position: relative;
 
     overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -188,6 +193,8 @@ button:disabled {
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
+
+    flex-shrink: 0;
 }
 
 
@@ -241,12 +248,21 @@ button:disabled {
     line-height: 28px;
 
     padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 
 .dashboard-remove:hover {
     background: #fee2e2;
     color: #dc2626;
+}
+
+
+.dashboard-empty {
+    justify-content: center;
 }
 
 
@@ -268,6 +284,8 @@ button:disabled {
     color: #374151;
 
     white-space: normal;
+
+    overflow-wrap: anywhere;
 }
 
 
@@ -763,39 +781,8 @@ button:disabled {
    NORMAL QUESTION
 ===================================== */
 
-.show-answer-button {
-    width: 100%;
-
-    min-height: 48px;
-
-    padding:
-        12px 16px;
-
-    border: 0;
-
-    border-radius: 10px;
-
-    background: #2563eb;
-
-    color: #ffffff;
-
-    font-weight: 700;
-}
-
-
-.flashcard-answer-section {
-    width: 100%;
-
-    overflow: visible;
-}
-
-
-.answer-section {
-    width: 100%;
-
+.normal-question-card .answer-section {
     margin-top: 4px;
-
-    overflow: visible;
 }
 
 
@@ -1330,13 +1317,6 @@ button.skip-button {
         width: 100%;
 
         min-height: 46px;
-    }
-
-
-    .show-answer-button {
-        min-height: 46px;
-
-        font-size: 13px;
     }
 
 

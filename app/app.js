@@ -1006,7 +1006,6 @@ function createStudyHeader(
                 id="topNextButton"
                 class="next-button top-next-button"
                 onclick="nextQuestion(event)"
-                style="display:none;"
             >
                 CÂU TIẾP THEO →
             </button>
@@ -1813,7 +1812,7 @@ function normalizeAnswer(
 
 
 // =====================================
-// CÂU HỎI THƯỜNG
+// CÂU HỎI THƯỜNG (KHÔNG LẬT)
 // =====================================
 
 function showFlashcardQuestion(
@@ -1853,144 +1852,67 @@ function showFlashcardQuestion(
             </div>
 
 
-            <button
-                id="showAnswerButton"
-                class="show-answer-button"
-                onclick="showFlashcardAnswer(event)"
-            >
+            <div class="answer-section">
 
-                XEM ĐÁP ÁN
+                <div class="card-label">
 
-            </button>
-
-
-            <div
-                id="flashcardAnswerSection"
-                class="flashcard-answer-section"
-                style="display:none;"
-            >
-
-                <div class="answer-section">
-
-                    <div class="card-label">
-
-                        ĐÁP ÁN
-
-                    </div>
-
-
-                    <div class="flashcard-answer">
-
-                        ${formatText(
-                            q.answer
-                        )}
-
-                    </div>
+                    ĐÁP ÁN
 
                 </div>
 
 
-                <div class="explanation-section">
+                <div class="flashcard-answer">
 
-                    <div class="card-label">
+                    ${formatText(
+                        q.answer
+                    )}
 
-                        GIẢI THÍCH
+                </div>
 
-                    </div>
+            </div>
 
 
-                    <div class="flashcard-explanation">
+            <div class="explanation-section">
 
-                        ${
-                            q.explanation
-                                ? formatText(
-                                    q.explanation
-                                )
-                                : "Không có giải thích cho câu này."
-                        }
+                <div class="card-label">
 
-                    </div>
+                    GIẢI THÍCH
 
                 </div>
 
 
-                <div class="flashcard-actions">
+                <div class="flashcard-explanation">
 
-                    <button
-                        type="button"
-                        class="review-button"
-                        onclick="markNotLearned(event)"
-                    >
-
-                        🔴 CHƯA THUỘC
-
-                    </button>
+                    ${
+                        q.explanation
+                            ? formatText(
+                                q.explanation
+                            )
+                            : "Không có giải thích cho câu này."
+                    }
 
                 </div>
+
+            </div>
+
+
+            <div class="flashcard-actions">
+
+                <button
+                    type="button"
+                    class="review-button"
+                    onclick="markNotLearned(event)"
+                >
+
+                    🔴 CHƯA THUỘC
+
+                </button>
 
             </div>
 
         </div>
 
     `;
-
-}
-
-
-// =====================================
-// XEM ĐÁP ÁN
-// =====================================
-
-function showFlashcardAnswer(
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-
-    const answerSection =
-        document.getElementById(
-            "flashcardAnswerSection"
-        );
-
-
-    const showButton =
-        document.getElementById(
-            "showAnswerButton"
-        );
-
-
-    const nextButton =
-        document.getElementById(
-            "topNextButton"
-        );
-
-
-    if (!answerSection) {
-        return;
-    }
-
-
-    answerSection.style.display =
-        "block";
-
-
-    if (showButton) {
-
-        showButton.style.display =
-            "none";
-
-    }
-
-
-    if (nextButton) {
-
-        nextButton.style.display =
-            "flex";
-
-    }
 
 }
 
