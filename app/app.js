@@ -44,22 +44,18 @@ async function loadQuestions() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Không tải được dữ liệu online"
             );
-
         }
 
         const onlineData =
             await response.json();
 
         if (!Array.isArray(onlineData)) {
-
             throw new Error(
                 "Dữ liệu online không hợp lệ"
             );
-
         }
 
         questions =
@@ -976,10 +972,6 @@ function showQuestion(
         );
 
 
-    // =================================
-    // MCQ
-    // =================================
-
     if (
         questionType === "MCQ"
     ) {
@@ -993,10 +985,6 @@ function showQuestion(
     }
 
 
-    // =================================
-    // ĐIỀN KHUYẾT
-    // =================================
-
     if (
         questionType === "FILL_BLANK"
     ) {
@@ -1009,10 +997,6 @@ function showQuestion(
 
     }
 
-
-    // =================================
-    // FLASHCARD BÌNH THƯỜNG
-    // =================================
 
     showFlashcardQuestion(
         q
@@ -1104,9 +1088,7 @@ function showMCQQuestion(
         </div>
 
 
-        <div
-            class="interactive-card"
-        >
+        <div class="interactive-card">
 
             <div class="card-label">
                 TRẮC NGHIỆM
@@ -1133,6 +1115,12 @@ function showMCQQuestion(
             <div
                 id="mcqFeedback"
                 class="answer-feedback"
+            ></div>
+
+
+            <div
+                id="mcqExplanation"
+                class="explanation-section interactive-explanation"
             ></div>
 
 
@@ -1235,13 +1223,13 @@ function checkMCQAnswer(
         );
 
 
-    buttons.forEach(
-        button => {
-
-            button.disabled = true;
-
-        }
-    );
+    const isCorrect =
+        normalizeAnswer(
+            selectedAnswer
+        ) ===
+        normalizeAnswer(
+            correctAnswer
+        );
 
 
     buttons.forEach(
@@ -1257,6 +1245,7 @@ function checkMCQAnswer(
 
 
             if (
+                isCorrect &&
                 normalizeAnswer(answer) ===
                 normalizeAnswer(correctAnswer)
             ) {
@@ -1270,8 +1259,7 @@ function checkMCQAnswer(
 
             if (
                 buttonIndex === index &&
-                normalizeAnswer(answer) !==
-                normalizeAnswer(correctAnswer)
+                !isCorrect
             ) {
 
                 button.classList.add(
@@ -1284,69 +1272,78 @@ function checkMCQAnswer(
     );
 
 
-    const isCorrect =
-        normalizeAnswer(
-            selectedAnswer
-        ) ===
-        normalizeAnswer(
-            correctAnswer
-        );
-
-
     const feedback =
         document.getElementById(
             "mcqFeedback"
         );
 
 
-    if (!feedback) {
+    const explanation =
+        document.getElementById(
+            "mcqExplanation"
+        );
+
+
+    if (
+        !feedback ||
+        !explanation
+    ) {
+
         return;
+
     }
 
 
-    feedback.innerHTML = `
+    // =================================
+    // TRẢ LỜI ĐÚNG
+    // =================================
 
-        <div class="${isCorrect ? "correct-feedback" : "wrong-feedback"}">
+    if (isCorrect) {
 
-            <div class="feedback-title">
+        buttons.forEach(
+            button => {
 
-                ${isCorrect
-                    ? "✅ Chính xác!"
-                    : "❌ Chưa đúng"}
+                button.disabled = true;
 
-            </div>
-
-
-            <div class="feedback-answer">
-
-                <strong>
-                    Đáp án:
-                </strong>
-
-                ${formatText(q.answer)}
-
-            </div>
-
-
-            ${
-                q.explanation
-                    ? `
-
-                        <div class="feedback-explanation">
-
-                            <strong>
-                                Giải thích:
-                            </strong>
-
-                            ${formatText(
-                                q.explanation
-                            )}
-
-                        </div>
-
-                    `
-                    : ""
             }
+        );
+
+
+        feedback.innerHTML = `
+
+            <div class="correct-feedback">
+
+                <div class="feedback-title">
+
+                    ✅ Chính xác!
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        explanation.innerHTML = `
+
+            <div class="explanation-title">
+
+                GIẢI THÍCH
+
+            </div>
+
+
+            <div class="feedback-explanation">
+
+                ${
+                    q.explanation
+                        ? formatText(
+                            q.explanation
+                        )
+                        : "Không có giải thích cho câu này."
+                }
+
+            </div>
 
 
             <button
@@ -1358,9 +1355,57 @@ function checkMCQAnswer(
 
             </button>
 
+        `;
+
+
+        return;
+
+    }
+
+
+    // =================================
+    // TRẢ LỜI SAI
+    // =================================
+
+    const hint =
+        String(
+            q.hint || ""
+        ).trim();
+
+
+    feedback.innerHTML = `
+
+        <div class="wrong-feedback">
+
+            <div class="feedback-title">
+
+                ❌ Chưa chính xác
+
+            </div>
+
+
+            ${
+                hint
+                    ? `
+
+                        <div class="hint-box">
+
+                            💡 <strong>Gợi ý:</strong>
+
+                            ${formatText(hint)}
+
+                        </div>
+
+                    `
+                    : ""
+            }
+
         </div>
 
     `;
+
+
+    explanation.innerHTML = "";
 
 }
 
@@ -1416,9 +1461,7 @@ function showFillBlankQuestion(
         </div>
 
 
-        <div
-            class="interactive-card"
-        >
+        <div class="interactive-card">
 
             <div class="card-label">
                 ĐIỀN KHUYẾT
@@ -1461,6 +1504,12 @@ function showFillBlankQuestion(
             <div
                 id="fillFeedback"
                 class="answer-feedback"
+            ></div>
+
+
+            <div
+                id="fillExplanation"
+                class="explanation-section interactive-explanation"
             ></div>
 
 
@@ -1559,9 +1608,16 @@ function checkFillBlankAnswer(
         );
 
 
+    const explanation =
+        document.getElementById(
+            "fillExplanation"
+        );
+
+
     if (
         !input ||
-        !feedback
+        !feedback ||
+        !explanation
     ) {
 
         return;
@@ -1596,72 +1652,71 @@ function checkFillBlankAnswer(
         );
 
 
-    input.disabled = true;
+    // =================================
+    // ĐÚNG
+    // =================================
+
+    if (isCorrect) {
+
+        input.disabled = true;
 
 
-    const checkButton =
-        document.querySelector(
-            ".check-answer-button"
+        const checkButton =
+            document.querySelector(
+                ".check-answer-button"
+            );
+
+
+        if (checkButton) {
+            checkButton.disabled = true;
+        }
+
+
+        input.classList.remove(
+            "wrong-input"
         );
 
 
-    if (checkButton) {
-
-        checkButton.disabled = true;
-
-    }
+        input.classList.add(
+            "correct-input"
+        );
 
 
-    input.classList.add(
-        isCorrect
-            ? "correct-input"
-            : "wrong-input"
-    );
+        feedback.innerHTML = `
+
+            <div class="correct-feedback">
+
+                <div class="feedback-title">
+
+                    ✅ Chính xác!
+
+                </div>
+
+            </div>
+
+        `;
 
 
-    feedback.innerHTML = `
+        explanation.innerHTML = `
 
-        <div class="${isCorrect ? "correct-feedback" : "wrong-feedback"}">
+            <div class="explanation-title">
 
-            <div class="feedback-title">
-
-                ${isCorrect
-                    ? "✅ Chính xác!"
-                    : "❌ Chưa đúng"}
+                GIẢI THÍCH
 
             </div>
 
 
-            <div class="feedback-answer">
+            <div class="feedback-explanation">
 
-                <strong>
-                    Đáp án:
-                </strong>
-
-                ${formatText(q.answer)}
+                ${
+                    q.explanation
+                        ? formatText(
+                            q.explanation
+                        )
+                        : "Không có giải thích cho câu này."
+                }
 
             </div>
-
-
-            ${
-                q.explanation
-                    ? `
-
-                        <div class="feedback-explanation">
-
-                            <strong>
-                                Giải thích:
-                            </strong>
-
-                            ${formatText(
-                                q.explanation
-                            )}
-
-                        </div>
-
-                    `
-                    : ""
-            }
 
 
             <button
@@ -1673,9 +1728,67 @@ function checkFillBlankAnswer(
 
             </button>
 
+        `;
+
+
+        return;
+
+    }
+
+
+    // =================================
+    // SAI
+    // =================================
+
+    input.classList.remove(
+        "correct-input"
+    );
+
+
+    input.classList.add(
+        "wrong-input"
+    );
+
+
+    const hint =
+        String(
+            q.hint || ""
+        ).trim();
+
+
+    feedback.innerHTML = `
+
+        <div class="wrong-feedback">
+
+            <div class="feedback-title">
+
+                ❌ Chưa chính xác
+
+            </div>
+
+
+            ${
+                hint
+                    ? `
+
+                        <div class="hint-box">
+
+                            💡 <strong>Gợi ý:</strong>
+
+                            ${formatText(hint)}
+
+                        </div>
+
+                    `
+                    : ""
+            }
+
         </div>
 
     `;
+
+
+    explanation.innerHTML = "";
 
 }
 
