@@ -2,1502 +2,494 @@
     box-sizing: border-box;
 }
 
-html,
 body {
     margin: 0;
-    padding: 0;
-
-    width: 100%;
-    height: 100%;
-
     font-family: Arial, sans-serif;
-
-    background: #f4f7f9;
+    background: #f5f7fa;
     color: #222;
 }
 
-body {
-    display: flex;
-    justify-content: center;
-}
-
-.app-container {
-    width: 100%;
-    max-width: 800px;
-
-    height: 100vh;
-
-    display: flex;
-    flex-direction: column;
-}
-
-
-/* ================================= */
-/* HEADER */
-/* ================================= */
-
-.app-header {
-    flex-shrink: 0;
-
-    display: flex;
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 14px 18px;
-
-    background: #0f766e;
-    color: white;
-}
-
-.logo {
-    font-size: 28px;
-}
-
-.app-header h1 {
-    margin: 0;
-
-    font-size: 21px;
-}
-
-.app-header p {
-    margin: 3px 0 0;
-
-    font-size: 13px;
-
-    opacity: 0.9;
-}
-
-
-/* ================================= */
-/* MAIN */
-/* ================================= */
-
-#app {
-    flex: 1;
-
-    min-height: 0;
-
-    overflow-y: auto;
-
-    padding: 14px;
-}
-
-
-/* ================================= */
-/* CARD */
-/* ================================= */
-
-.card {
-    background: white;
-
-    border-radius: 14px;
-
-    padding: 16px;
-
-    margin-bottom: 12px;
-
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.07);
-}
-
-
-/* ================================= */
-/* SECTION HEADING */
-/* ================================= */
-
-.section-heading {
-    display: block;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    color: #0f766e;
-
-    margin-bottom: 8px;
-}
-
-
-/* ================================= */
-/* DASHBOARD 2 x 2 */
-/* ================================= */
-
-.dashboard-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
-    gap: 10px;
-
-    width: 100%;
-
-    margin-bottom: 18px;
-}
-
-
-/* ================================= */
-/* CARD MÔN */
-/* ================================= */
-
-.subject-progress {
-    position: relative;
-
-    min-width: 0;
-
-    min-height: 145px;
-
-    background: white;
-
-    border-radius: 13px;
-
-    padding: 15px 12px 12px;
-
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.07);
-
-    cursor: pointer;
-
-    transition:
-        transform 0.12s ease,
-        box-shadow 0.12s ease;
-}
-
-.subject-progress:active {
-    transform: scale(0.98);
-}
-
-.subject-progress:hover {
-    box-shadow:
-        0 3px 10px rgba(0, 0, 0, 0.10);
-}
-
-
-.subject-name {
-    padding-right: 25px;
-
-    font-size: 14px;
-
-    font-weight: 700;
-
-    color: #0f766e;
-
-    margin-bottom: 12px;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-
-/* ================================= */
-/* NÚT X */
-/* ================================= */
-
-.dashboard-remove {
-    position: absolute;
-
-    top: 6px;
-    right: 6px;
-
-    width: 25px;
-    height: 25px;
-
-    padding: 0;
-
-    margin: 0;
-
-    border-radius: 50%;
-
-    background: #f1f5f4;
-
-    color: #777;
-
-    font-size: 18px;
-
-    line-height: 25px;
-
-    font-weight: 400;
-
-    z-index: 5;
-
-    cursor: pointer;
-}
-
-.dashboard-remove:hover {
-    background: #e5e7eb;
-}
-
-
-/* ================================= */
-/* THỐNG KÊ */
-/* ================================= */
-
-.progress-item {
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    font-size: 12px;
-
-    padding: 4px 0;
-
-    white-space: nowrap;
-}
-
-
-.progress-item span {
-    flex-shrink: 0;
-
-    margin-right: 6px;
-}
-
-
-.progress-item strong {
-    flex-shrink: 0;
-
-    font-size: 13px;
-}
-
-
-/* ================================= */
-/* Ô THÊM MÔN */
-/* ================================= */
-
-.dashboard-empty {
-    min-width: 0;
-
-    min-height: 145px;
-
-    background: #f8fafb;
-
-    border: 1px dashed #b8ccca;
-
-    border-radius: 13px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 12px;
-}
-
-
-.dashboard-add-select {
-    width: 100%;
-
-    padding: 12px 10px;
-
-    border-radius: 9px;
-
-    border: 1px solid #ccd8d7;
-
-    background: white;
-
-    font-size: 14px;
-
-    color: #555;
-}
-
-
-/* ================================= */
-/* MENU */
-/* ================================= */
-
-.menu-section {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 9px;
-
-    margin-bottom: 14px;
-}
-
-
-.menu-button {
-    margin: 0;
-}
-
-
-.menu-button.secondary {
-    background: white;
-
-    color: #0f766e;
-
-    border: 1px solid #d5e5e3;
-}
-
-
-/* ================================= */
-/* CHỌN MÔN */
-/* ================================= */
-
-.study-selection {
-    margin-bottom: 0;
-}
-
-
-.section-title {
-    display: block;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    margin-bottom: 6px;
-}
-
-
-select {
-    width: 100%;
-
-    padding: 12px;
-
-    border-radius: 9px;
-
-    border: 1px solid #ccc;
-
-    font-size: 15px;
-
-    background: white;
-}
-
-
-.start-button {
-    margin-top: 12px;
-}
-
-
-/* ================================= */
-/* TÌM KIẾM Ở DƯỚI */
-/* ================================= */
-
-.search-home-section {
-    margin-top: 28px;
-
-    padding-top: 2px;
-
-    padding-bottom: 20px;
-}
-
-
-.search-home-button {
-    background: transparent;
-
-    color: #777;
-
-    border: 1px solid #d8dddd;
-
-    font-weight: 500;
-}
-
-
-/* ================================= */
-/* BUTTON */
-/* ================================= */
-
-button {
-    width: 100%;
-
-    padding: 12px;
-
-    border: none;
-
-    border-radius: 9px;
-
-    background: #0f766e;
-
-    color: white;
-
-    font-size: 15px;
-
-    font-weight: 600;
-
-    cursor: pointer;
-}
-
-
-button:active {
-    transform: scale(0.98);
-}
-
-
-/* ================================= */
-/* STUDY HEADER */
-/* ================================= */
-
-.study-header {
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    margin-bottom: 12px;
-}
-
-
-.study-header .back-button {
-    width: 42px;
-
-    height: 42px;
-
-    padding: 0;
-
-    margin: 0;
-
-    background: white;
-
-    color: #0f766e;
-
-    border: 1px solid #d8e5e4;
-
-    font-size: 22px;
-}
-
-
-.study-subject {
-    font-size: 14px;
-
-    font-weight: 700;
-
-    color: #0f766e;
-}
-
-
-.study-counter {
-    font-size: 13px;
-
-    color: #777;
-
-    margin-top: 2px;
-}
-
-
-/* ================================= */
-/* FLASHCARD */
-/* ================================= */
-
-.flashcard-container {
-    width: 100%;
-
-    perspective: 1200px;
-
-    margin-bottom: 10px;
-}
-
-
-/*
-    KHU VỰC HỌC CỐ ĐỊNH CHIỀU CAO
-
-    Không để chiều cao thay đổi theo nội dung.
-*/
-
-.flashcard {
-    position: relative;
-
-    width: 100%;
-
-    height: 560px;
-
-    min-height: 560px;
-    max-height: 560px;
-
-    transform-style: preserve-3d;
-
-    transition:
-        transform 0.65s
-        cubic-bezier(0.4, 0.2, 0.2, 1);
-
-    cursor: pointer;
-}
-
-
-.flashcard.flipped {
-    transform: rotateY(180deg);
-}
-
-
-/* ================================= */
-/* FLASHCARD FACE */
-/* ================================= */
-
-.flashcard-face {
-    position: absolute;
-
-    inset: 0;
-
-    width: 100%;
-
-    height: 100%;
-
-    background: white;
-
-    border-radius: 16px;
-
-    box-shadow:
-        0 4px 15px rgba(0, 0, 0, 0.09);
-
-    backface-visibility: hidden;
-
-    -webkit-backface-visibility: hidden;
-
-    overflow: hidden;
-}
-
-
-/* ================================= */
-/* FRONT */
-/* ================================= */
-
-.flashcard-front {
-    display: flex;
-
-    flex-direction: column;
-
-    padding: 22px;
-}
-
-
-.card-label {
-    flex-shrink: 0;
-
-    font-size: 12px;
-
-    font-weight: 700;
-
-    color: #0f766e;
-
-    letter-spacing: 0.3px;
-}
-
-
-.flashcard-question {
-    flex: 1;
-
-    min-height: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    text-align: center;
-
-    font-size: 18px;
-
-    line-height: 1.5;
-
-    padding: 20px 8px;
-
-    overflow-y: auto;
-
-    overflow-x: hidden;
-}
-
-
-/* ================================= */
-/* KHU VỰC DƯỚI MẶT TRƯỚC */
-/* ================================= */
-
-.flashcard-front-bottom {
-    flex-shrink: 0;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 2px;
-
-    padding-top: 8px;
-}
-
-
-/* ================================= */
-/* NÚT BỎ QUA */
-/* ================================= */
-
-.skip-button {
-    width: auto;
-
-    padding: 7px 14px;
-
-    margin: 0;
-
-    background: transparent;
-
-    color: #777;
-
-    border: 1px solid #d8dddd;
-
-    border-radius: 8px;
-
-    font-size: 12px;
-
-    font-weight: 500;
-}
-
-.skip-button:hover {
-    background: #f5f7f7;
-
-    color: #555;
-}
-
-
-/* ================================= */
-/* GỢI Ý LẬT */
-/* ================================= */
-
-.flip-hint {
-    flex-shrink: 0;
-
-    text-align: center;
-
-    font-size: 10px;
-
-    color: #aaa;
-
-    padding-top: 3px;
-}
-
-
-/* ================================= */
-/* BACK */
-/* ================================= */
-
-.flashcard-back {
-    transform: rotateY(180deg);
-
-    display: flex;
-
-    flex-direction: column;
-
-    padding: 18px;
-
-    overflow: hidden;
-}
-
-
-/* ================================= */
-/* CUỘN MẶT SAU */
-/* ================================= */
-
-.flashcard-back-scroll {
-    flex: 1;
-
-    min-height: 0;
-
-    width: 100%;
-
-    overflow-y: auto;
-
-    overflow-x: hidden;
-
-    padding-right: 7px;
-
-    padding-bottom: 12px;
-
-    scrollbar-width: auto;
-
-    -webkit-overflow-scrolling: touch;
-}
-
-
-.flashcard-back-scroll::-webkit-scrollbar {
-    width: 7px;
-}
-
-
-.flashcard-back-scroll::-webkit-scrollbar-track {
-    background: #e5e7eb;
-
-    border-radius: 10px;
-}
-
-
-.flashcard-back-scroll::-webkit-scrollbar-thumb {
-    background: #9ca3af;
-
-    border-radius: 10px;
-}
-
-
-/* ================================= */
-/* ĐÁP ÁN */
-/* ================================= */
-
-.flashcard-answer {
-    font-size: 15px;
-
-    line-height: 1.5;
-
-    margin-top: 9px;
-
-    padding: 12px;
-
-    background: #e8f5e9;
-
-    border-radius: 10px;
-
-    overflow-wrap: anywhere;
-
-    word-break: break-word;
-
-    white-space: normal;
-}
-
-
-/* ================================= */
-/* ACTION BUTTONS */
-/* ================================= */
-
-.flashcard-actions {
-    display: flex;
-
-    gap: 8px;
-
-    margin-top: 12px;
-
-    width: 100%;
-}
-
-
-.flashcard-actions button {
-    flex: 1;
-
-    min-width: 0;
-
-    margin: 0;
-
-    padding: 10px 5px;
-
-    font-size: 12px;
-}
-
-
-.review-button {
-    background: #c62828;
-}
-
-
-.next-button {
-    background: #0f766e;
-}
-
-
-/* ================================= */
-/* GIẢI THÍCH */
-/* ================================= */
-
-.explanation-section {
-    margin-top: 14px;
-}
-
-
-.flashcard-explanation {
-    margin-top: 8px;
-
-    padding: 12px;
-
-    background: #fff8e1;
-
-    border-radius: 10px;
-
-    font-size: 14px;
-
-    line-height: 1.5;
-
-    overflow-wrap: anywhere;
-
-    word-break: break-word;
-
-    white-space: normal;
-}
-
-
-/* ================================= */
-/* INTERACTIVE QUESTION */
-/* ================================= */
-
-.interactive-card {
-    width: 100%;
-
-    height: 560px;
-    min-height: 560px;
-    max-height: 560px;
-
-    background: white;
-
-    border-radius: 16px;
-
-    box-shadow:
-        0 4px 15px rgba(0, 0, 0, 0.09);
-
-    display: flex;
-
-    flex-direction: column;
-
-    overflow: hidden;
-}
-
-
-.interactive-question {
-    flex: 0 0 150px;
-
-    min-height: 150px;
-
-    max-height: 150px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    text-align: center;
-
-    padding: 18px 20px;
-
-    font-size: 18px;
-
-    line-height: 1.5;
-
-    overflow-y: auto;
-
-    overflow-x: hidden;
-}
-
-
-/* ================================= */
-/* MCQ */
-/* ================================= */
-
-.answer-choices {
-    flex: 0 0 auto;
-
-    width: 100%;
-
-    padding: 0 20px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 9px;
-
-    overflow-y: auto;
-
-    max-height: 235px;
-}
-
-
-.answer-choice {
-    flex-shrink: 0;
-
-    width: 100%;
-
-    min-height: 48px;
-
-    padding: 10px 13px;
-
-    margin: 0;
-
-    background: #f7faf9;
-
-    color: #333;
-
-    border: 1px solid #d5e5e3;
-
-    border-radius: 9px;
-
-    text-align: left;
-
-    font-size: 14px;
-
-    font-weight: 500;
-
-    line-height: 1.4;
-
-    white-space: normal;
-
-    overflow-wrap: anywhere;
-
-    word-break: break-word;
-}
-
-
-.answer-choice:hover {
-    background: #eef7f5;
-}
-
-
-.answer-choice.correct {
-    background: #dff3e5;
-
-    border-color: #4caf50;
-
-    color: #176b2c;
-}
-
-
-.answer-choice.wrong {
-    background: #fde4e4;
-
-    border-color: #d9534f;
-
-    color: #a32020;
-}
-
-
-/* ================================= */
-/* FEEDBACK */
-/* ================================= */
-
-.answer-feedback {
-    flex: 1;
-
-    min-height: 0;
-
-    margin: 14px 20px 0;
-
-    padding: 12px;
-
-    border-radius: 10px;
-
-    overflow-y: auto;
-
-    font-size: 14px;
-
-    line-height: 1.5;
-}
-
-
-.correct-feedback {
-    background: #edf8ef;
-}
-
-
-.wrong-feedback {
-    background: #fff1f1;
-}
-
-
-.feedback-title {
-    font-size: 15px;
-
-    font-weight: 700;
-
-    margin-bottom: 6px;
-}
-
-
-.feedback-answer {
-    margin-top: 5px;
-
-    font-weight: 600;
-}
-
-
-.feedback-explanation {
-    margin-top: 8px;
-
-    color: #555;
-}
-
-
-/* ================================= */
-/* FILL BLANK */
-/* ================================= */
-
-.fill-answer-area {
-    flex: 0 0 auto;
-
-    padding: 0 20px;
-}
-
-
-.fill-answer-input {
-    width: 100%;
-
-    height: 50px;
-
-    padding: 10px 13px;
-
-    border: 1px solid #ccd8d7;
-
-    border-radius: 9px;
-
-    font-size: 16px;
-
-    outline: none;
-
-    background: white;
-}
-
-
-.fill-answer-input:focus {
-    border-color: #0f766e;
-}
-
-
-.fill-answer-input.correct-input {
-    background: #edf8ef;
-
-    border-color: #4caf50;
-}
-
-
-.fill-answer-input.wrong-input {
-    background: #fff1f1;
-
-    border-color: #d9534f;
-}
-
-
-.check-answer-button {
-    margin-top: 9px;
-
-    width: 100%;
-
-    height: 45px;
-}
-
-
-.fill-answer-area .check-answer-button:disabled {
-    opacity: 0.65;
-
-    cursor: default;
-}
-
-
-/* ================================= */
-/* NÚT TIẾP THEO */
-/* ================================= */
-
-.interactive-card .next-button {
-    flex-shrink: 0;
-
-    width: calc(100% - 40px);
-
-    margin: 12px 20px 18px;
-
-    height: 45px;
-}
-
-
-/* ================================= */
-/* QUAY LẠI */
-/* ================================= */
-
-.return-question-button {
-    width: auto;
-
-    display: block;
-
+/* =========================
+   APP
+========================= */
+
+.app {
+    max-width: 1100px;
     margin: 0 auto;
-
-    padding: 8px 16px;
-
-    background: transparent;
-
-    color: #777;
-
-    font-size: 12px;
-
-    font-weight: 500;
+    padding: 20px;
 }
 
+/* =========================
+   HEADER
+========================= */
 
-/* ================================= */
-/* PAGE HEADER */
-/* ================================= */
-
-.page-header {
+.header {
     display: flex;
-
+    justify-content: space-between;
     align-items: center;
-
-    gap: 10px;
-
-    margin-bottom: 14px;
-}
-
-
-.page-header .back-button {
-    flex-shrink: 0;
-
-    width: 42px;
-
-    padding: 10px;
-
-    margin: 0;
-
-    background: white;
-
-    color: #0f766e;
-
-    border: 1px solid #d8e5e4;
-}
-
-
-.page-header h2 {
-    margin: 0;
-
-    font-size: 19px;
-}
-
-
-.page-header p {
-    margin: 3px 0 0;
-
-    font-size: 13px;
-
-    color: #777;
-}
-
-
-/* ================================= */
-/* CÂU CHƯA THUỘC */
-/* ================================= */
-
-.not-learned-list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 9px;
-}
-
-
-.not-learned-item {
-    background: white;
-
-    padding: 14px;
-
-    border-radius: 11px;
-
-    box-shadow:
-        0 2px 7px rgba(0, 0, 0, 0.06);
-
-    cursor: pointer;
-}
-
-
-.not-learned-subject {
-    font-size: 12px;
-
-    color: #0f766e;
-
-    font-weight: 700;
-
-    margin-bottom: 5px;
-}
-
-
-.not-learned-question {
-    font-size: 15px;
-
-    line-height: 1.45;
-}
-
-
-/* ================================= */
-/* SEARCH */
-/* ================================= */
-
-.search-box {
-    background: white;
-
-    padding: 12px;
-
-    border-radius: 11px;
-
-    margin-bottom: 12px;
-
-    box-shadow:
-        0 2px 7px rgba(0, 0, 0, 0.06);
-}
-
-
-.search-box input {
-    width: 100%;
-
-    padding: 12px;
-
-    border: 1px solid #ccc;
-
-    border-radius: 8px;
-
-    font-size: 16px;
-
-    outline: none;
-}
-
-
-.search-box input:focus {
-    border-color: #0f766e;
-}
-
-
-.search-count {
-    font-size: 13px;
-
-    color: #777;
-
-    margin-bottom: 8px;
-}
-
-
-.search-result {
-    background: white;
-
-    padding: 14px;
-
-    border-radius: 11px;
-
-    margin-bottom: 9px;
-
-    box-shadow:
-        0 2px 7px rgba(0, 0, 0, 0.06);
-
-    cursor: pointer;
-}
-
-
-.search-result-subject {
-    color: #0f766e;
-
-    font-size: 12px;
-
-    font-weight: 700;
-
-    margin-bottom: 5px;
-}
-
-
-.search-result-question {
-    font-size: 15px;
-
-    line-height: 1.45;
-}
-
-
-.search-empty {
-    text-align: center;
-
-    color: #888;
-
-    padding: 35px 15px;
-}
-
-
-/* ================================= */
-/* RESULT */
-/* ================================= */
-
-.result-card {
-    background: white;
-
-    border-radius: 14px;
-
-    padding: 35px 20px;
-
-    text-align: center;
-
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.07);
-}
-
-
-.result-icon {
-    font-size: 45px;
-
-    margin-bottom: 10px;
-}
-
-
-.result-card h2 {
-    margin: 0 0 8px;
-}
-
-
-.result-card p {
-    color: #777;
-
+    gap: 15px;
     margin-bottom: 20px;
 }
 
+.header h1 {
+    margin: 0;
+    font-size: 28px;
+}
 
-/* ================================= */
-/* EMPTY */
-/* ================================= */
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
 
-.empty-state {
+/* =========================
+   BUTTON
+========================= */
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: default;
+}
+
+/* =========================
+   MAIN CARD
+========================= */
+
+.flashcard {
+    width: 100%;
+    height: 560px;
+    position: relative;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/*
+   Tất cả loại câu hỏi đều dùng
+   cùng một khung.
+*/
+
+.interactive-card {
+    width: 100%;
+    height: 560px;
+    position: relative;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* =========================
+   CARD CONTENT
+========================= */
+
+.card-content {
+    width: 100%;
+    height: 100%;
+    padding: 35px;
+    overflow: hidden;
+}
+
+/* =========================
+   QUESTION AREA
+========================= */
+
+.question-area,
+.interactive-question {
+    width: 100%;
+    min-height: 150px;
+    max-height: 190px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    overflow-y: auto;
+
+    padding: 10px 5px;
+}
+
+.question-text {
+    font-size: 22px;
+    line-height: 1.55;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* =========================
+   META
+========================= */
+
+.question-meta {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 12px;
+}
+
+/* =========================
+   ANSWER AREA
+========================= */
+
+.answer-area {
+    width: 100%;
+    margin-top: 15px;
+}
+
+/* =========================
+   MCQ
+========================= */
+
+.answer-choices {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    max-height: 220px;
+    overflow-y: auto;
+
+    padding: 5px 2px;
+}
+
+.answer-choice {
+    width: 100%;
+    min-height: 48px;
+
+    padding: 12px 16px;
+
+    border: 1px solid #d9dee7;
+    border-radius: 10px;
+
+    background: #fff;
+
+    text-align: left;
+    font-size: 16px;
+    line-height: 1.4;
+
+    transition: 0.15s;
+}
+
+.answer-choice:hover:not(:disabled) {
+    background: #f5f7fb;
+    border-color: #9aa7b8;
+}
+
+.answer-choice.correct {
+    background: #eaf8ef;
+    border-color: #2e9b57;
+    color: #176b38;
+}
+
+.answer-choice.wrong {
+    background: #fff0f0;
+    border-color: #d9534f;
+    color: #a52622;
+}
+
+/* =========================
+   FEEDBACK + EXPLANATION
+========================= */
+
+.feedback-area {
+    width: 100%;
+    margin-top: 15px;
+
+    min-height: 105px;
+    max-height: 145px;
+
+    overflow-y: auto;
+
+    padding: 15px;
+
+    border-radius: 10px;
+    background: #f7f8fa;
+    border: 1px solid #e2e5ea;
+}
+
+.answer-feedback {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.feedback-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.correct-feedback .feedback-title {
+    color: #218544;
+}
+
+.wrong-feedback .feedback-title {
+    color: #c53030;
+}
+
+.feedback-answer {
+    margin-bottom: 8px;
+}
+
+.feedback-explanation {
+    line-height: 1.55;
+    color: #444;
+}
+
+/* =========================
+   HINT
+========================= */
+
+.hint-box {
+    margin-top: 10px;
+    padding: 10px 12px;
+
+    border-radius: 8px;
+
+    background: #fff8e6;
+    border: 1px solid #f0d58a;
+
+    color: #765b13;
+
+    line-height: 1.45;
+}
+
+/* =========================
+   FILL BLANK
+========================= */
+
+.fill-answer-area {
+    width: 100%;
+    margin-top: 20px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fill-answer-input {
+    width: 100%;
+    min-height: 48px;
+
+    padding: 12px 15px;
+
+    border: 1px solid #cfd5df;
+    border-radius: 10px;
+
+    font-size: 16px;
+    outline: none;
+}
+
+.fill-answer-input:focus {
+    border-color: #7b8798;
+}
+
+.fill-answer-input.correct-input {
+    background: #eaf8ef;
+    border-color: #2e9b57;
+}
+
+.fill-answer-input.wrong-input {
+    background: #fff0f0;
+    border-color: #d9534f;
+}
+
+.check-answer-button {
+    width: 100%;
+    min-height: 45px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #222;
+    color: white;
+
+    font-size: 16px;
+}
+
+.check-answer-button:hover:not(:disabled) {
+    background: #333;
+}
+
+/* =========================
+   NEXT BUTTON
+========================= */
+
+.next-button {
+    position: absolute;
+
+    left: 35px;
+    right: 35px;
+    bottom: 25px;
+
+    width: calc(100% - 70px);
+
+    min-height: 46px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #222;
+    color: white;
+
+    font-size: 16px;
+}
+
+.next-button:hover {
+    background: #333;
+}
+
+/* =========================
+   NORMAL FLASHCARD
+========================= */
+
+.card-front,
+.card-back {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+}
+
+.card-front {
+    justify-content: space-between;
+}
+
+.card-back {
+    justify-content: flex-start;
+    overflow-y: auto;
+}
+
+.card-question {
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     text-align: center;
 
-    padding: 35px 20px;
+    overflow-y: auto;
+
+    padding: 20px;
 }
 
+.card-answer {
+    width: 100%;
+    margin-top: 20px;
 
-.empty-icon {
-    font-size: 42px;
+    padding: 20px;
+
+    border-radius: 10px;
+
+    background: #f7f8fa;
+
+    line-height: 1.6;
+
+    overflow-y: auto;
 }
 
+/* =========================
+   OPTIONS / GENERAL
+========================= */
 
-/* ================================= */
-/* MOBILE */
-/* ================================= */
+.option {
+    margin-bottom: 8px;
+}
 
-@media (max-width: 500px) {
+/* =========================
+   SCROLLBAR
+========================= */
 
-    #app {
-        padding: 10px;
+.question-area::-webkit-scrollbar,
+.interactive-question::-webkit-scrollbar,
+.answer-choices::-webkit-scrollbar,
+.feedback-area::-webkit-scrollbar,
+.card-back::-webkit-scrollbar,
+.card-question::-webkit-scrollbar {
+    width: 6px;
+}
+
+.question-area::-webkit-scrollbar-thumb,
+.interactive-question::-webkit-scrollbar-thumb,
+.answer-choices::-webkit-scrollbar-thumb,
+.feedback-area::-webkit-scrollbar-thumb,
+.card-back::-webkit-scrollbar-thumb,
+.card-question::-webkit-scrollbar-thumb {
+    background: #c7ccd4;
+    border-radius: 10px;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 700px) {
+
+    .app {
+        padding: 12px;
     }
 
-
-    .dashboard-grid {
-        gap: 8px;
+    .header {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-
-    .subject-progress,
-    .dashboard-empty {
-        min-height: 138px;
+    .header h1 {
+        font-size: 23px;
     }
-
-
-    .section-heading {
-        font-size: 13px;
-
-        margin-bottom: 7px;
-    }
-
-
-    .dashboard-add-select {
-        font-size: 13px;
-
-        padding: 11px 8px;
-    }
-
-
-    /*
-        Mobile vẫn giữ chiều cao cố định.
-        Không đổi từ 560 xuống 500 nữa.
-    */
 
     .flashcard,
     .interactive-card {
         height: 500px;
-
-        min-height: 500px;
-
-        max-height: 500px;
+        border-radius: 14px;
     }
 
-
-    .flashcard-front {
-        padding: 18px;
+    .card-content {
+        padding: 20px;
     }
 
-
-    .flashcard-question {
-        font-size: 17px;
-
-        line-height: 1.48;
-    }
-
-
+    .question-area,
     .interactive-question {
-        flex-basis: 135px;
-
-        min-height: 135px;
-
-        max-height: 135px;
-
-        font-size: 17px;
-
-        line-height: 1.48;
-
-        padding: 15px;
+        min-height: 120px;
+        max-height: 160px;
     }
 
+    .question-text {
+        font-size: 18px;
+        line-height: 1.5;
+    }
 
     .answer-choices {
-        padding: 0 15px;
-
-        gap: 8px;
-
-        max-height: 220px;
+        max-height: 185px;
     }
-
 
     .answer-choice {
-        min-height: 45px;
-
-        padding: 9px 11px;
-
-        font-size: 13px;
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 15px;
     }
 
+    .feedback-area {
+        max-height: 120px;
+        min-height: 90px;
+        padding: 12px;
+    }
+
+    .next-button {
+        left: 20px;
+        right: 20px;
+        bottom: 18px;
+
+        width: calc(100% - 40px);
+    }
 
     .fill-answer-area {
-        padding: 0 15px;
+        margin-top: 12px;
     }
-
-
-    .answer-feedback {
-        margin-left: 15px;
-
-        margin-right: 15px;
-    }
-
-
-    .interactive-card .next-button {
-        width: calc(100% - 30px);
-
-        margin-left: 15px;
-
-        margin-right: 15px;
-    }
-
-
-    .skip-button {
-        font-size: 11px;
-
-        padding: 6px 12px;
-    }
-
-
-    .flashcard-back {
-        padding: 15px;
-    }
-
-
-    .flashcard-answer {
-        font-size: 14px;
-    }
-
-
-    .flashcard-explanation {
-        font-size: 13px;
-    }
-
-
-    .flashcard-actions button {
-        font-size: 11px;
-    }
-
 }
