@@ -1,7 +1,6 @@
 let questions = [];
 let selectedQuestions = [];
 let currentQuestion = 0;
-let isFlipped = false;
 
 let notLearnedQuestions = [];
 let searchResults = [];
@@ -952,9 +951,6 @@ function showQuestion(
     }
 
 
-    isFlipped = false;
-
-
     const app =
         document.getElementById(
             "app"
@@ -1001,6 +997,64 @@ function showQuestion(
     showFlashcardQuestion(
         q
     );
+
+}
+
+
+// =====================================
+// TẠO HEADER CÂU HỎI
+// =====================================
+
+function createStudyHeader(
+    q
+) {
+
+    return `
+
+        <div class="study-header">
+
+            <button
+                class="back-button"
+                onclick="goBackToMenu()"
+            >
+                ←
+            </button>
+
+
+            <div>
+
+                <div class="study-subject">
+
+                    ${escapeHTML(q.mon)}
+
+                </div>
+
+
+                <div class="study-counter">
+
+                    Câu ${currentQuestion + 1}
+                    /
+                    ${selectedQuestions.length}
+
+                </div>
+
+            </div>
+
+
+            <button
+                id="topNextButton"
+                class="next-button top-next-button"
+                onclick="nextQuestion(event)"
+                style="display:none;"
+            >
+
+                CÂU TIẾP THEO →
+
+            </button>
+
+        </div>
+
+    `;
 
 }
 
@@ -1058,35 +1112,7 @@ function showMCQQuestion(
 
     app.innerHTML = `
 
-        <div class="study-header">
-
-            <button
-                class="back-button"
-                onclick="goBackToMenu()"
-            >
-                ←
-            </button>
-
-
-            <div>
-
-                <div class="study-subject">
-                    ${escapeHTML(q.mon)}
-                </div>
-
-
-                <div class="study-counter">
-
-                    Câu ${currentQuestion + 1}
-                    /
-                    ${selectedQuestions.length}
-
-                </div>
-
-            </div>
-
-        </div>
-
+        ${createStudyHeader(q)}
 
         <div class="interactive-card">
 
@@ -1122,20 +1148,6 @@ function showMCQQuestion(
                 id="mcqExplanation"
                 class="explanation-section interactive-explanation"
             ></div>
-
-
-            <div class="flashcard-front-bottom">
-
-                <button
-                    class="skip-button"
-                    onclick="skipQuestion(event)"
-                >
-
-                    ⏭️ BỎ QUA
-
-                </button>
-
-            </div>
 
         </div>
 
@@ -1223,55 +1235,6 @@ function checkMCQAnswer(
         );
 
 
-    const isCorrect =
-        normalizeAnswer(
-            selectedAnswer
-        ) ===
-        normalizeAnswer(
-            correctAnswer
-        );
-
-
-    buttons.forEach(
-        (
-            button,
-            buttonIndex
-        ) => {
-
-            const answer =
-                choices[
-                    buttonIndex
-                ];
-
-
-            if (
-                isCorrect &&
-                normalizeAnswer(answer) ===
-                normalizeAnswer(correctAnswer)
-            ) {
-
-                button.classList.add(
-                    "correct"
-                );
-
-            }
-
-
-            if (
-                buttonIndex === index &&
-                !isCorrect
-            ) {
-
-                button.classList.add(
-                    "wrong"
-                );
-
-            }
-
-        }
-    );
-
-
     const feedback =
         document.getElementById(
             "mcqFeedback"
@@ -1294,6 +1257,15 @@ function checkMCQAnswer(
     }
 
 
+    const isCorrect =
+        normalizeAnswer(
+            selectedAnswer
+        ) ===
+        normalizeAnswer(
+            correctAnswer
+        );
+
+
     // =================================
     // TRẢ LỜI ĐÚNG
     // =================================
@@ -1301,9 +1273,30 @@ function checkMCQAnswer(
     if (isCorrect) {
 
         buttons.forEach(
-            button => {
+            (
+                button,
+                buttonIndex
+            ) => {
 
                 button.disabled = true;
+
+
+                const answer =
+                    choices[
+                        buttonIndex
+                    ];
+
+
+                if (
+                    normalizeAnswer(answer) ===
+                    normalizeAnswer(correctAnswer)
+                ) {
+
+                    button.classList.add(
+                        "correct"
+                    );
+
+                }
 
             }
         );
@@ -1345,17 +1338,21 @@ function checkMCQAnswer(
 
             </div>
 
-
-            <button
-                class="next-button"
-                onclick="nextQuestion(event)"
-            >
-
-                CÂU TIẾP THEO
-
-            </button>
-
         `;
+
+
+        const nextButton =
+            document.getElementById(
+                "topNextButton"
+            );
+
+
+        if (nextButton) {
+
+            nextButton.style.display =
+                "inline-flex";
+
+        }
 
 
         return;
@@ -1366,6 +1363,11 @@ function checkMCQAnswer(
     // =================================
     // TRẢ LỜI SAI
     // =================================
+
+    buttons[index].classList.add(
+        "wrong"
+    );
+
 
     const hint =
         String(
@@ -1384,21 +1386,17 @@ function checkMCQAnswer(
             </div>
 
 
-            ${
-                hint
-                    ? `
+            <div class="hint-box">
 
-                        <div class="hint-box">
+                💡 <strong>Gợi ý:</strong>
 
-                            💡 <strong>Gợi ý:</strong>
+                ${
+                    hint
+                        ? formatText(hint)
+                        : "Hãy thử lại."
+                }
 
-                            ${formatText(hint)}
-
-                        </div>
-
-                    `
-                    : ""
-            }
+            </div>
 
         </div>
 
@@ -1431,35 +1429,7 @@ function showFillBlankQuestion(
 
     app.innerHTML = `
 
-        <div class="study-header">
-
-            <button
-                class="back-button"
-                onclick="goBackToMenu()"
-            >
-                ←
-            </button>
-
-
-            <div>
-
-                <div class="study-subject">
-                    ${escapeHTML(q.mon)}
-                </div>
-
-
-                <div class="study-counter">
-
-                    Câu ${currentQuestion + 1}
-                    /
-                    ${selectedQuestions.length}
-
-                </div>
-
-            </div>
-
-        </div>
-
+        ${createStudyHeader(q)}
 
         <div class="interactive-card">
 
@@ -1511,20 +1481,6 @@ function showFillBlankQuestion(
                 id="fillExplanation"
                 class="explanation-section interactive-explanation"
             ></div>
-
-
-            <div class="flashcard-front-bottom">
-
-                <button
-                    class="skip-button"
-                    onclick="skipQuestion(event)"
-                >
-
-                    ⏭️ BỎ QUA
-
-                </button>
-
-            </div>
 
         </div>
 
@@ -1718,17 +1674,21 @@ function checkFillBlankAnswer(
 
             </div>
 
-
-            <button
-                class="next-button"
-                onclick="nextQuestion(event)"
-            >
-
-                CÂU TIẾP THEO
-
-            </button>
-
         `;
+
+
+        const nextButton =
+            document.getElementById(
+                "topNextButton"
+            );
+
+
+        if (nextButton) {
+
+            nextButton.style.display =
+                "inline-flex";
+
+        }
 
 
         return;
@@ -1767,21 +1727,17 @@ function checkFillBlankAnswer(
             </div>
 
 
-            ${
-                hint
-                    ? `
+            <div class="hint-box">
 
-                        <div class="hint-box">
+                💡 <strong>Gợi ý:</strong>
 
-                            💡 <strong>Gợi ý:</strong>
+                ${
+                    hint
+                        ? formatText(hint)
+                        : "Hãy thử lại."
+                }
 
-                            ${formatText(hint)}
-
-                        </div>
-
-                    `
-                    : ""
-            }
+            </div>
 
         </div>
 
@@ -1789,6 +1745,8 @@ function checkFillBlankAnswer(
 
 
     explanation.innerHTML = "";
+
+    input.focus();
 
 }
 
@@ -1846,7 +1804,8 @@ function normalizeAnswer(
 
 
 // =====================================
-// FLASHCARD THƯỜNG
+// CÂU HỎI THƯỜNG
+// KHÔNG CÒN FLASHCARD
 // =====================================
 
 function showFlashcardQuestion(
@@ -1866,178 +1825,103 @@ function showFlashcardQuestion(
 
     app.innerHTML = `
 
-        <div class="study-header">
+        ${createStudyHeader(q)}
 
-            <button
-                class="back-button"
-                onclick="goBackToMenu()"
-            >
-                ←
-            </button>
+        <div class="normal-question-card">
 
+            <div class="card-label">
 
-            <div>
-
-                <div class="study-subject">
-
-                    ${escapeHTML(q.mon)}
-
-                </div>
-
-
-                <div class="study-counter">
-
-                    Câu ${currentQuestion + 1}
-                    /
-                    ${selectedQuestions.length}
-
-                </div>
+                CÂU HỎI
 
             </div>
 
-        </div>
+
+            <div class="normal-question">
+
+                ${formatText(
+                    q.question
+                )}
+
+            </div>
 
 
-        <div
-            class="flashcard-container"
-            onclick="flipCard()"
-        >
-
-            <div
-                id="flashcard"
-                class="flashcard"
+            <button
+                id="showAnswerButton"
+                class="show-answer-button"
+                onclick="showFlashcardAnswer(event)"
             >
 
-                <div
-                    class="flashcard-face flashcard-front"
-                >
+                XEM ĐÁP ÁN
+
+            </button>
+
+
+            <div
+                id="flashcardAnswerSection"
+                class="flashcard-answer-section"
+                style="display:none;"
+            >
+
+                <div class="answer-section">
 
                     <div class="card-label">
-                        CÂU HỎI
+
+                        ĐÁP ÁN
+
                     </div>
 
 
-                    <div class="flashcard-question">
+                    <div class="flashcard-answer">
 
                         ${formatText(
-                            q.question
+                            q.answer
                         )}
 
                     </div>
 
-
-                    <div class="flashcard-front-bottom">
-
-                        <button
-                            class="skip-button"
-                            onclick="skipQuestion(event)"
-                        >
-
-                            ⏭️ BỎ QUA
-
-                        </button>
+                </div>
 
 
-                        <div class="flip-hint">
-                            chạm để lật
-                        </div>
+                <div class="explanation-section">
+
+                    <div class="card-label">
+
+                        GIẢI THÍCH
+
+                    </div>
+
+
+                    <div class="flashcard-explanation">
+
+                        ${
+                            q.explanation
+                                ? formatText(
+                                    q.explanation
+                                )
+                                : "Không có giải thích cho câu này."
+                        }
 
                     </div>
 
                 </div>
 
 
-                <div
-                    class="flashcard-face flashcard-back"
-                >
+                <div class="flashcard-actions">
 
-                    <div
-                        class="flashcard-back-scroll"
+                    <button
+                        class="review-button"
+                        onclick="markNotLearned(event)"
                     >
 
-                        <div class="card-label">
-                            ĐÁP ÁN
-                        </div>
+                        🔴 CHƯA THUỘC
 
-
-                        <div class="flashcard-answer">
-
-                            ${formatText(
-                                q.answer
-                            )}
-
-                        </div>
-
-
-                        <div
-                            class="flashcard-actions"
-                        >
-
-                            <button
-                                class="review-button"
-                                onclick="markNotLearned(event)"
-                            >
-
-                                🔴 CHƯA THUỘC
-
-                            </button>
-
-
-                            <button
-                                class="next-button"
-                                onclick="nextQuestion(event)"
-                            >
-
-                                CÂU TIẾP THEO
-
-                            </button>
-
-                        </div>
-
-
-                        <div
-                            class="explanation-section"
-                        >
-
-                            <div class="card-label">
-                                GIẢI THÍCH
-                            </div>
-
-
-                            <div
-                                class="flashcard-explanation"
-                            >
-
-                                ${formatText(
-                                    q.explanation
-                                )}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="flip-hint">
-                        chạm để lật
-                    </div>
+                    </button>
 
                 </div>
 
             </div>
 
         </div>
-
-
-        <button
-            class="return-question-button"
-            onclick="flipBack(event)"
-        >
-
-            ↩️ QUAY LẠI
-
-        </button>
 
     `;
 
@@ -2045,10 +1929,10 @@ function showFlashcardQuestion(
 
 
 // =====================================
-// BỎ QUA CÂU HỎI
+// XEM ĐÁP ÁN CÂU THƯỜNG
 // =====================================
 
-function skipQuestion(
+function showFlashcardAnswer(
     event
 ) {
 
@@ -2057,122 +1941,47 @@ function skipQuestion(
     }
 
 
-    const q =
-        selectedQuestions[
-            currentQuestion
-        ];
-
-
-    if (!q) {
-        return;
-    }
-
-
-    selectedQuestions =
-        selectedQuestions.filter(
-            item =>
-                String(item.id) !==
-                String(q.id)
-        );
-
-
-    if (
-        selectedQuestions.length === 0
-    ) {
-
-        showResult();
-
-        return;
-
-    }
-
-
-    if (
-        currentQuestion >=
-        selectedQuestions.length
-    ) {
-
-        currentQuestion =
-            selectedQuestions.length - 1;
-
-    }
-
-
-    showQuestion(
-        true
-    );
-
-}
-
-
-// =====================================
-// LẬT CARD
-// =====================================
-
-function flipCard() {
-
-    const card =
+    const answerSection =
         document.getElementById(
-            "flashcard"
+            "flashcardAnswerSection"
         );
 
 
-    if (!card) {
-        return;
-    }
-
-
-    isFlipped =
-        !isFlipped;
-
-
-    if (isFlipped) {
-
-        card.classList.add(
-            "flipped"
-        );
-
-    } else {
-
-        card.classList.remove(
-            "flipped"
-        );
-
-    }
-
-}
-
-
-// =====================================
-// QUAY LẠI MẶT CÂU HỎI
-// =====================================
-
-function flipBack(
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-
-    const card =
+    const showButton =
         document.getElementById(
-            "flashcard"
+            "showAnswerButton"
         );
 
 
-    if (!card) {
+    const nextButton =
+        document.getElementById(
+            "topNextButton"
+        );
+
+
+    if (!answerSection) {
         return;
     }
 
 
-    isFlipped = false;
+    answerSection.style.display =
+        "block";
 
 
-    card.classList.remove(
-        "flipped"
-    );
+    if (showButton) {
+
+        showButton.style.display =
+            "none";
+
+    }
+
+
+    if (nextButton) {
+
+        nextButton.style.display =
+            "inline-flex";
+
+    }
 
 }
 
