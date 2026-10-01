@@ -15079,5 +15079,16 @@
     "note": null,
     "answer": "Cả hai thuốc đều tác động làm giảm Aldosteron (chất gây thải K+ ở ống thận), dẫn đến cộng hưởng chặn hoàn toàn đường thải Kali.",
     "explanation": "ACEi giảm chuyển Angiotensin I thành II làm giảm tiết Aldosteron. Spironolacton chẹn cạnh tranh receptor của Aldosteron tại ống góp. Aldosteron có nhiệm vụ thải K+ qua nước tiểu. Khi phối hợp 2 thuốc, Aldosteron vừa giảm tiết vừa bị chẹn receptor làm sự thải K+ bị đình trệ hoàn toàn, K+ tích tụ trong máu tăng vọt (> 6.0 mmol/L) gây rung thất ngừng tim."
+  },
+  {
+    "id": "TEST GITHUB",
+    "mon": null,
+    "bai": null,
+    "chuong": null,
+    "dang": null,
+    "question": null,
+    "note": null,
+    "answer": null,
+    "explanation": null
   }
 ]
