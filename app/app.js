@@ -1,4 +1,3 @@
-```javascript
 let questions = [];
 let selectedQuestions = [];
 let currentQuestion = 0;
@@ -35,7 +34,7 @@ const DASHBOARD_KEY =
 async function loadQuestions() {
 
     // =================================
-    // ONLINE
+    // 1. TẢI ONLINE
     // =================================
 
     try {
@@ -62,10 +61,9 @@ async function loadQuestions() {
             );
         }
 
-        questions =
-            onlineData;
+        questions = onlineData;
 
-        // Lưu cache
+        // Lưu dữ liệu vào cache
         localStorage.setItem(
             LOCAL_CACHE_KEY,
             JSON.stringify(onlineData)
@@ -86,7 +84,7 @@ async function loadQuestions() {
 
 
     // =================================
-    // CACHE
+    // 2. ĐỌC CACHE
     // =================================
 
     try {
@@ -105,7 +103,7 @@ async function loadQuestions() {
                 Array.isArray(
                     cachedQuestions
                 )
-            {
+            ) {
 
                 questions =
                     cachedQuestions;
@@ -113,9 +111,7 @@ async function loadQuestions() {
                 showMenu();
 
                 return;
-
             }
-
         }
 
     } catch (error) {
@@ -129,7 +125,7 @@ async function loadQuestions() {
 
 
     // =================================
-    // LOCAL / APK
+    // 3. ĐỌC QUESTIONS.JSON LOCAL
     // =================================
 
     try {
@@ -147,10 +143,10 @@ async function loadQuestions() {
 
         }
 
-        const apkData =
+        const localData =
             await response.json();
 
-        if (!Array.isArray(apkData)) {
+        if (!Array.isArray(localData)) {
 
             throw new Error(
                 "questions.json không hợp lệ"
@@ -159,11 +155,11 @@ async function loadQuestions() {
         }
 
         questions =
-            apkData;
+            localData;
 
         localStorage.setItem(
             LOCAL_CACHE_KEY,
-            JSON.stringify(apkData)
+            JSON.stringify(localData)
         );
 
         showMenu();
@@ -281,7 +277,7 @@ function getDashboardSubjects() {
         );
 
 
-    // Nếu lần đầu mở app
+    // Nếu chưa có Dashboard
     // tự động lấy 4 môn đầu tiên
 
     if (saved.length === 0) {
@@ -332,10 +328,8 @@ function removeDashboardSubject(
         event.stopPropagation();
     }
 
-
     let dashboard =
         getDashboardSubjects();
-
 
     dashboard =
         dashboard.filter(
@@ -343,11 +337,9 @@ function removeDashboardSubject(
                 item !== subject
         );
 
-
     saveDashboardSubjects(
         dashboard
     );
-
 
     showMenu();
 
@@ -366,12 +358,9 @@ function addDashboardSubject(
         return;
     }
 
-
     let dashboard =
         getDashboardSubjects();
 
-
-    // Không cho trùng môn
 
     if (
         dashboard.includes(
@@ -387,8 +376,6 @@ function addDashboardSubject(
 
     }
 
-
-    // Tối đa 4 môn
 
     if (
         dashboard.length >= 4
@@ -411,7 +398,6 @@ function addDashboardSubject(
     saveDashboardSubjects(
         dashboard
     );
-
 
     showMenu();
 
@@ -507,7 +493,6 @@ function isNotLearned(
             )
         ) || 0;
 
-
     return count > 0;
 
 }
@@ -588,12 +573,12 @@ function showMenu() {
         getDashboardSubjects();
 
 
-    // =================================
-    // DASHBOARD 4 Ô
-    // =================================
-
     let dashboardHTML = "";
 
+
+    // =================================
+    // 4 Ô DASHBOARD
+    // =================================
 
     for (
         let i = 0;
@@ -631,15 +616,9 @@ function showMenu() {
                         ×
                     </button>
 
-
                     <div class="subject-name">
-
-                        ${escapeHTML(
-                            subject
-                        )}
-
+                        ${escapeHTML(subject)}
                     </div>
-
 
                     <div class="progress-item">
 
@@ -653,7 +632,6 @@ function showMenu() {
 
                     </div>
 
-
                     <div class="progress-item">
 
                         <span>
@@ -665,7 +643,6 @@ function showMenu() {
                         </strong>
 
                     </div>
-
 
                     <div class="progress-item">
 
@@ -718,9 +695,7 @@ function showMenu() {
                         <option
                             value="${escapeHTML(item)}"
                         >
-
                             ${escapeHTML(item)}
-
                         </option>
 
                     `;
@@ -752,7 +727,7 @@ function showMenu() {
 
 
     // =================================
-    // RENDER
+    // HIỂN THỊ
     // =================================
 
     const app =
@@ -769,9 +744,7 @@ function showMenu() {
     app.innerHTML = `
 
         <div class="section-heading">
-
             MÔN ĐANG HỌC
-
         </div>
 
 
@@ -994,9 +967,7 @@ function showQuestion(
                 class="back-button"
                 onclick="goBackToMenu()"
             >
-
                 ←
-
             </button>
 
 
@@ -1034,7 +1005,6 @@ function showQuestion(
                 class="flashcard"
             >
 
-
                 <!-- MẶT TRƯỚC -->
 
                 <div
@@ -1042,9 +1012,7 @@ function showQuestion(
                 >
 
                     <div class="card-label">
-
                         CÂU HỎI
-
                     </div>
 
 
@@ -1070,9 +1038,7 @@ function showQuestion(
 
 
                         <div class="flip-hint">
-
                             chạm để lật
-
                         </div>
 
                     </div>
@@ -1091,9 +1057,7 @@ function showQuestion(
                     >
 
                         <div class="card-label">
-
                             ĐÁP ÁN
-
                         </div>
 
 
@@ -1137,9 +1101,7 @@ function showQuestion(
                         >
 
                             <div class="card-label">
-
                                 GIẢI THÍCH
-
                             </div>
 
 
@@ -1159,9 +1121,7 @@ function showQuestion(
 
 
                     <div class="flip-hint">
-
                         chạm để lật
-
                     </div>
 
                 </div>
@@ -1209,8 +1169,8 @@ function skipQuestion(
     }
 
 
-    // Xóa toàn bộ các lần xuất hiện
-    // của câu này khỏi lượt học hiện tại
+    // Xóa tất cả bản sao của câu này
+    // khỏi lượt học hiện tại
 
     selectedQuestions =
         selectedQuestions.filter(
@@ -1230,9 +1190,6 @@ function skipQuestion(
 
     }
 
-
-    // Phần tử tiếp theo
-    // đã dồn vào vị trí hiện tại
 
     if (
         currentQuestion >=
@@ -1450,23 +1407,17 @@ function showResult() {
         <div class="result-card">
 
             <div class="result-icon">
-
                 🎉
-
             </div>
 
 
             <h2>
-
                 Hoàn thành!
-
             </h2>
 
 
             <p>
-
                 Bạn đã hoàn thành lượt học.
-
             </p>
 
 
@@ -1520,16 +1471,12 @@ function showNotLearned() {
                 <div class="card empty-state">
 
                     <div class="empty-icon">
-
                         🎉
-
                     </div>
 
 
                     <h2>
-
                         Chưa có câu nào
-
                     </h2>
 
 
@@ -1577,16 +1524,12 @@ function showNotLearned() {
             <div>
 
                 <h2>
-
                     📚 CÂU CHƯA THUỘC
-
                 </h2>
 
 
                 <p>
-
                     ${notLearnedQuestions.length} câu
-
                 </p>
 
             </div>
@@ -1733,9 +1676,7 @@ function showSearch(
             <div>
 
                 <h2>
-
                     🔎 TÌM KIẾM
-
                 </h2>
 
 
@@ -1780,9 +1721,6 @@ function showSearch(
     `;
 
 
-    // Tự động focus
-    // khi mở tìm kiếm mới
-
     if (resetSearch) {
 
         setTimeout(
@@ -1797,8 +1735,6 @@ function showSearch(
                 if (input) {
 
                     input.focus();
-
-                    input.click();
 
                 }
 
@@ -2114,4 +2050,3 @@ function escapeHTML(
         );
 
 }
-```
