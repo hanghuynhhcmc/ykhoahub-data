@@ -20,7 +20,7 @@ let mcqWrongTimer = null;
 // =====================================
 
 const ONLINE_DATA_URL =
-    "https://raw.githubusercontent.com/hanghuynhhmc/ykhoahub-data/refs/heads/main/questions.json";
+    "https://raw.githubusercontent.com/hanghuynhhcmc/ykhoahub-data/refs/heads/main/questions.json";
 
 const LOCAL_CACHE_KEY =
     "ykhoahub_questions_cache";
