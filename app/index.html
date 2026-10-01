@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
 
@@ -11,23 +10,154 @@
 
     <title>Y KHOA HUB</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 </head>
 
 <body>
 
-<div class="container">
+    <header class="app-header">
 
-    <h1>🩺 Y KHOA HUB</h1>
+        <div class="header-left">
+            <h1>Y KHOA HUB</h1>
+            <p>Kho câu hỏi Y khoa</p>
+        </div>
 
-    <div id="app">
-        Đang tải dữ liệu...
-    </div>
+        <div class="header-right">
 
-</div>
+            <button
+                id="homeButton"
+                class="header-button"
+            >
+                🏠 Trang chủ
+            </button>
 
-<script src="app.js"></script>
+        </div>
+
+    </header>
+
+
+    <main class="app-container">
+
+        <!-- ========================= -->
+        <!-- MÀN HÌNH TRANG CHỦ -->
+        <!-- ========================= -->
+
+        <section
+            id="homeScreen"
+            class="screen"
+        >
+
+            <div class="home-title">
+                <h2>Y KHOA HUB</h2>
+
+                <p>
+                    Học và ôn tập kiến thức Y khoa
+                </p>
+            </div>
+
+
+            <div
+                id="subjectList"
+                class="subject-list"
+            >
+                <!-- Danh sách môn sẽ được app.js tạo -->
+            </div>
+
+        </section>
+
+
+        <!-- ========================= -->
+        <!-- MÀN HÌNH CHỌN BÀI -->
+        <!-- ========================= -->
+
+        <section
+            id="lessonScreen"
+            class="screen hidden"
+        >
+
+            <div class="screen-header">
+
+                <button
+                    id="backToSubjects"
+                    class="back-button"
+                >
+                    ← Quay lại
+                </button>
+
+                <div>
+                    <h2 id="lessonTitle">
+                        Chọn bài
+                    </h2>
+
+                    <p id="lessonSubtitle"></p>
+                </div>
+
+            </div>
+
+
+            <div
+                id="lessonList"
+                class="lesson-list"
+            >
+                <!-- Danh sách bài -->
+            </div>
+
+        </section>
+
+
+        <!-- ========================= -->
+        <!-- MÀN HÌNH HỌC -->
+        <!-- ========================= -->
+
+        <section
+            id="studyScreen"
+            class="screen hidden"
+        >
+
+            <div class="study-header">
+
+                <button
+                    id="backToLessons"
+                    class="back-button"
+                >
+                    ← Quay lại
+                </button>
+
+                <div class="study-progress">
+
+                    <span id="progressText">
+                        Câu 1
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ========================= -->
+            <!-- KHU VỰC CÂU HỎI -->
+            <!-- ========================= -->
+
+            <div
+                id="questionContainer"
+                class="question-container"
+            >
+                <!-- app.js sẽ đưa câu hỏi vào đây -->
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ========================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ========================= -->
+
+    <script src="app.js"></script>
 
 </body>
-
 </html>
