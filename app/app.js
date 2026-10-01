@@ -33,37 +33,38 @@ const DASHBOARD_KEY =
 
 async function loadQuestions() {
 
-    // =================================
-    // 1. TẢI ONLINE
-    // =================================
-
     try {
 
-        const response = await fetch(
-            ONLINE_DATA_URL,
-            {
-                cache: "no-store"
-            }
-        );
+        const response =
+            await fetch(
+                ONLINE_DATA_URL,
+                {
+                    cache: "no-store"
+                }
+            );
 
         if (!response.ok) {
+
             throw new Error(
                 "Không tải được dữ liệu online"
             );
+
         }
 
         const onlineData =
             await response.json();
 
         if (!Array.isArray(onlineData)) {
+
             throw new Error(
                 "Dữ liệu online không hợp lệ"
             );
+
         }
 
-        questions = onlineData;
+        questions =
+            onlineData;
 
-        // Lưu dữ liệu vào cache
         localStorage.setItem(
             LOCAL_CACHE_KEY,
             JSON.stringify(onlineData)
@@ -84,7 +85,7 @@ async function loadQuestions() {
 
 
     // =================================
-    // 2. ĐỌC CACHE
+    // ĐỌC CACHE
     // =================================
 
     try {
@@ -111,7 +112,9 @@ async function loadQuestions() {
                 showMenu();
 
                 return;
+
             }
+
         }
 
     } catch (error) {
@@ -125,7 +128,7 @@ async function loadQuestions() {
 
 
     // =================================
-    // 3. ĐỌC QUESTIONS.JSON LOCAL
+    // ĐỌC QUESTIONS.JSON LOCAL
     // =================================
 
     try {
@@ -265,9 +268,6 @@ function getDashboardSubjects() {
     }
 
 
-    // Chỉ giữ những môn
-    // vẫn còn trong dữ liệu
-
     saved =
         saved.filter(
             subject =>
@@ -276,9 +276,6 @@ function getDashboardSubjects() {
                 )
         );
 
-
-    // Nếu chưa có Dashboard
-    // tự động lấy 4 môn đầu tiên
 
     if (saved.length === 0) {
 
@@ -576,10 +573,6 @@ function showMenu() {
     let dashboardHTML = "";
 
 
-    // =================================
-    // 4 Ô DASHBOARD
-    // =================================
-
     for (
         let i = 0;
         i < 4;
@@ -589,10 +582,6 @@ function showMenu() {
         const subject =
             dashboardSubjects[i];
 
-
-        // =============================
-        // Ô CÓ MÔN
-        // =============================
 
         if (subject) {
 
@@ -660,14 +649,7 @@ function showMenu() {
 
             `;
 
-        }
-
-
-        // =============================
-        // Ô TRỐNG
-        // =============================
-
-        else {
+        } else {
 
             const availableSubjects =
                 subjects.filter(
@@ -725,10 +707,6 @@ function showMenu() {
 
     }
 
-
-    // =================================
-    // HIỂN THỊ
-    // =================================
 
     const app =
         document.getElementById(
@@ -882,8 +860,6 @@ function createWeightedQuestions(
     );
 
 
-    // Trộn ngẫu nhiên
-
     for (
         let i = result.length - 1;
         i > 0;
@@ -914,7 +890,42 @@ function createWeightedQuestions(
 
 
 // =====================================
-// HIỆN FLASHCARD
+// XÁC ĐỊNH LOẠI CÂU HỎI
+// =====================================
+
+function getQuestionType(
+    q
+) {
+
+    const type =
+        String(
+            q.dang || ""
+        )
+            .trim()
+            .toUpperCase();
+
+
+    if (type === "MCQ") {
+        return "MCQ";
+    }
+
+
+    if (
+        type === "FILL_BLANK"
+    ) {
+
+        return "FILL_BLANK";
+
+    }
+
+
+    return "FLASHCARD";
+
+}
+
+
+// =====================================
+// HIỆN CÂU HỎI
 // =====================================
 
 function showQuestion(
@@ -959,6 +970,787 @@ function showQuestion(
     }
 
 
+    const questionType =
+        getQuestionType(
+            q
+        );
+
+
+    // =================================
+    // MCQ
+    // =================================
+
+    if (
+        questionType === "MCQ"
+    ) {
+
+        showMCQQuestion(
+            q
+        );
+
+        return;
+
+    }
+
+
+    // =================================
+    // ĐIỀN KHUYẾT
+    // =================================
+
+    if (
+        questionType === "FILL_BLANK"
+    ) {
+
+        showFillBlankQuestion(
+            q
+        );
+
+        return;
+
+    }
+
+
+    // =================================
+    // FLASHCARD BÌNH THƯỜNG
+    // =================================
+
+    showFlashcardQuestion(
+        q
+    );
+
+}
+
+
+// =====================================
+// MCQ
+// =====================================
+
+function showMCQQuestion(
+    q
+) {
+
+    const app =
+        document.getElementById(
+            "app"
+        );
+
+
+    if (!app) {
+        return;
+    }
+
+
+    const choices =
+        getChoices(
+            q.choices
+        );
+
+
+    let choicesHTML = "";
+
+
+    choices.forEach(
+        (
+            choice,
+            index
+        ) => {
+
+            choicesHTML += `
+
+                <button
+                    class="answer-choice"
+                    onclick="checkMCQAnswer(${index}, event)"
+                >
+
+                    ${formatText(choice)}
+
+                </button>
+
+            `;
+
+        }
+    );
+
+
+    app.innerHTML = `
+
+        <div class="study-header">
+
+            <button
+                class="back-button"
+                onclick="goBackToMenu()"
+            >
+                ←
+            </button>
+
+
+            <div>
+
+                <div class="study-subject">
+                    ${escapeHTML(q.mon)}
+                </div>
+
+
+                <div class="study-counter">
+
+                    Câu ${currentQuestion + 1}
+                    /
+                    ${selectedQuestions.length}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="interactive-card"
+        >
+
+            <div class="card-label">
+                TRẮC NGHIỆM
+            </div>
+
+
+            <div class="interactive-question">
+
+                ${formatText(q.question)}
+
+            </div>
+
+
+            <div
+                id="mcqChoices"
+                class="answer-choices"
+            >
+
+                ${choicesHTML}
+
+            </div>
+
+
+            <div
+                id="mcqFeedback"
+                class="answer-feedback"
+            ></div>
+
+
+            <div class="flashcard-front-bottom">
+
+                <button
+                    class="skip-button"
+                    onclick="skipQuestion(event)"
+                >
+
+                    ⏭️ BỎ QUA
+
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+// =====================================
+// TÁCH LỰA CHỌN
+// =====================================
+
+function getChoices(
+    choices
+) {
+
+    if (
+        choices === null ||
+        choices === undefined
+    ) {
+
+        return [];
+
+    }
+
+
+    return String(choices)
+        .split(/\r?\n/)
+        .map(
+            choice =>
+                choice.trim()
+        )
+        .filter(
+            choice =>
+                choice !== ""
+        );
+
+}
+
+
+// =====================================
+// KIỂM TRA MCQ
+// =====================================
+
+function checkMCQAnswer(
+    index,
+    event
+) {
+
+    if (event) {
+        event.stopPropagation();
+    }
+
+
+    const q =
+        selectedQuestions[
+            currentQuestion
+        ];
+
+
+    if (!q) {
+        return;
+    }
+
+
+    const choices =
+        getChoices(
+            q.choices
+        );
+
+
+    const selectedAnswer =
+        choices[index];
+
+
+    const correctAnswer =
+        String(
+            q.answer ?? ""
+        ).trim();
+
+
+    const buttons =
+        document.querySelectorAll(
+            ".answer-choice"
+        );
+
+
+    buttons.forEach(
+        button => {
+
+            button.disabled = true;
+
+        }
+    );
+
+
+    buttons.forEach(
+        (
+            button,
+            buttonIndex
+        ) => {
+
+            const answer =
+                choices[
+                    buttonIndex
+                ];
+
+
+            if (
+                normalizeAnswer(answer) ===
+                normalizeAnswer(correctAnswer)
+            ) {
+
+                button.classList.add(
+                    "correct"
+                );
+
+            }
+
+
+            if (
+                buttonIndex === index &&
+                normalizeAnswer(answer) !==
+                normalizeAnswer(correctAnswer)
+            ) {
+
+                button.classList.add(
+                    "wrong"
+                );
+
+            }
+
+        }
+    );
+
+
+    const isCorrect =
+        normalizeAnswer(
+            selectedAnswer
+        ) ===
+        normalizeAnswer(
+            correctAnswer
+        );
+
+
+    const feedback =
+        document.getElementById(
+            "mcqFeedback"
+        );
+
+
+    if (!feedback) {
+        return;
+    }
+
+
+    feedback.innerHTML = `
+
+        <div class="${isCorrect ? "correct-feedback" : "wrong-feedback"}">
+
+            <div class="feedback-title">
+
+                ${isCorrect
+                    ? "✅ Chính xác!"
+                    : "❌ Chưa đúng"}
+
+            </div>
+
+
+            <div class="feedback-answer">
+
+                <strong>
+                    Đáp án:
+                </strong>
+
+                ${formatText(q.answer)}
+
+            </div>
+
+
+            ${
+                q.explanation
+                    ? `
+
+                        <div class="feedback-explanation">
+
+                            <strong>
+                                Giải thích:
+                            </strong>
+
+                            ${formatText(
+                                q.explanation
+                            )}
+
+                        </div>
+
+                    `
+                    : ""
+            }
+
+
+            <button
+                class="next-button"
+                onclick="nextQuestion(event)"
+            >
+
+                CÂU TIẾP THEO
+
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+// =====================================
+// ĐIỀN KHUYẾT
+// =====================================
+
+function showFillBlankQuestion(
+    q
+) {
+
+    const app =
+        document.getElementById(
+            "app"
+        );
+
+
+    if (!app) {
+        return;
+    }
+
+
+    app.innerHTML = `
+
+        <div class="study-header">
+
+            <button
+                class="back-button"
+                onclick="goBackToMenu()"
+            >
+                ←
+            </button>
+
+
+            <div>
+
+                <div class="study-subject">
+                    ${escapeHTML(q.mon)}
+                </div>
+
+
+                <div class="study-counter">
+
+                    Câu ${currentQuestion + 1}
+                    /
+                    ${selectedQuestions.length}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="interactive-card"
+        >
+
+            <div class="card-label">
+                ĐIỀN KHUYẾT
+            </div>
+
+
+            <div class="interactive-question">
+
+                ${formatText(q.question)}
+
+            </div>
+
+
+            <div class="fill-answer-area">
+
+                <input
+                    id="fillAnswerInput"
+                    class="fill-answer-input"
+                    type="text"
+                    placeholder="Nhập câu trả lời..."
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    onkeydown="handleFillBlankKey(event)"
+                >
+
+
+                <button
+                    class="check-answer-button"
+                    onclick="checkFillBlankAnswer(event)"
+                >
+
+                    KIỂM TRA
+
+                </button>
+
+            </div>
+
+
+            <div
+                id="fillFeedback"
+                class="answer-feedback"
+            ></div>
+
+
+            <div class="flashcard-front-bottom">
+
+                <button
+                    class="skip-button"
+                    onclick="skipQuestion(event)"
+                >
+
+                    ⏭️ BỎ QUA
+
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    setTimeout(
+        () => {
+
+            const input =
+                document.getElementById(
+                    "fillAnswerInput"
+                );
+
+
+            if (input) {
+                input.focus();
+            }
+
+        },
+        100
+    );
+
+}
+
+
+// =====================================
+// ENTER ĐỂ KIỂM TRA ĐIỀN KHUYẾT
+// =====================================
+
+function handleFillBlankKey(
+    event
+) {
+
+    if (
+        event.key === "Enter"
+    ) {
+
+        checkFillBlankAnswer(
+            event
+        );
+
+    }
+
+}
+
+
+// =====================================
+// KIỂM TRA ĐIỀN KHUYẾT
+// =====================================
+
+function checkFillBlankAnswer(
+    event
+) {
+
+    if (event) {
+        event.stopPropagation();
+    }
+
+
+    const q =
+        selectedQuestions[
+            currentQuestion
+        ];
+
+
+    if (!q) {
+        return;
+    }
+
+
+    const input =
+        document.getElementById(
+            "fillAnswerInput"
+        );
+
+
+    const feedback =
+        document.getElementById(
+            "fillFeedback"
+        );
+
+
+    if (
+        !input ||
+        !feedback
+    ) {
+
+        return;
+
+    }
+
+
+    const userAnswer =
+        input.value.trim();
+
+
+    if (!userAnswer) {
+
+        input.focus();
+
+        return;
+
+    }
+
+
+    const acceptedAnswers =
+        getAcceptedAnswers(
+            q.answer
+        );
+
+
+    const isCorrect =
+        acceptedAnswers.some(
+            answer =>
+                normalizeAnswer(answer) ===
+                normalizeAnswer(userAnswer)
+        );
+
+
+    input.disabled = true;
+
+
+    const checkButton =
+        document.querySelector(
+            ".check-answer-button"
+        );
+
+
+    if (checkButton) {
+
+        checkButton.disabled = true;
+
+    }
+
+
+    input.classList.add(
+        isCorrect
+            ? "correct-input"
+            : "wrong-input"
+    );
+
+
+    feedback.innerHTML = `
+
+        <div class="${isCorrect ? "correct-feedback" : "wrong-feedback"}">
+
+            <div class="feedback-title">
+
+                ${isCorrect
+                    ? "✅ Chính xác!"
+                    : "❌ Chưa đúng"}
+
+            </div>
+
+
+            <div class="feedback-answer">
+
+                <strong>
+                    Đáp án:
+                </strong>
+
+                ${formatText(q.answer)}
+
+            </div>
+
+
+            ${
+                q.explanation
+                    ? `
+
+                        <div class="feedback-explanation">
+
+                            <strong>
+                                Giải thích:
+                            </strong>
+
+                            ${formatText(
+                                q.explanation
+                            )}
+
+                        </div>
+
+                    `
+                    : ""
+            }
+
+
+            <button
+                class="next-button"
+                onclick="nextQuestion(event)"
+            >
+
+                CÂU TIẾP THEO
+
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+// =====================================
+// TÁCH ĐÁP ÁN ĐƯỢC CHẤP NHẬN
+// =====================================
+
+function getAcceptedAnswers(
+    answer
+) {
+
+    if (
+        answer === null ||
+        answer === undefined
+    ) {
+
+        return [];
+
+    }
+
+
+    return String(answer)
+        .split(/\r?\n/)
+        .map(
+            item =>
+                item.trim()
+        )
+        .filter(
+            item =>
+                item !== ""
+        );
+
+}
+
+
+// =====================================
+// CHUẨN HÓA ĐÁP ÁN
+// =====================================
+
+function normalizeAnswer(
+    text
+) {
+
+    return normalizeText(
+        text
+    )
+        .replace(
+            /\s+/g,
+            " "
+        )
+        .trim();
+
+}
+
+
+// =====================================
+// FLASHCARD THƯỜNG
+// =====================================
+
+function showFlashcardQuestion(
+    q
+) {
+
+    const app =
+        document.getElementById(
+            "app"
+        );
+
+
+    if (!app) {
+        return;
+    }
+
+
     app.innerHTML = `
 
         <div class="study-header">
@@ -975,9 +1767,7 @@ function showQuestion(
 
                 <div class="study-subject">
 
-                    ${escapeHTML(
-                        q.mon
-                    )}
+                    ${escapeHTML(q.mon)}
 
                 </div>
 
@@ -1004,8 +1794,6 @@ function showQuestion(
                 id="flashcard"
                 class="flashcard"
             >
-
-                <!-- MẶT TRƯỚC -->
 
                 <div
                     class="flashcard-face flashcard-front"
@@ -1045,8 +1833,6 @@ function showQuestion(
 
                 </div>
 
-
-                <!-- MẶT SAU -->
 
                 <div
                     class="flashcard-face flashcard-back"
@@ -1168,9 +1954,6 @@ function skipQuestion(
         return;
     }
 
-
-    // Xóa tất cả bản sao của câu này
-    // khỏi lượt học hiện tại
 
     selectedQuestions =
         selectedQuestions.filter(
