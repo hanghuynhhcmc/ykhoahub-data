@@ -103,6 +103,23 @@ body {
 
 
 /* ================================= */
+/* SECTION HEADING */
+/* ================================= */
+
+.section-heading {
+    display: block;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #0f766e;
+
+    margin-bottom: 8px;
+}
+
+
+/* ================================= */
 /* DASHBOARD 2 x 2 */
 /* ================================= */
 
@@ -139,6 +156,21 @@ body {
 
     box-shadow:
         0 2px 8px rgba(0, 0, 0, 0.07);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+.subject-progress:active {
+    transform: scale(0.98);
+}
+
+.subject-progress:hover {
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.10);
 }
 
 
@@ -191,6 +223,8 @@ body {
     font-weight: 400;
 
     z-index: 5;
+
+    cursor: pointer;
 }
 
 .dashboard-remove:hover {
@@ -248,8 +282,6 @@ body {
 
     display: flex;
 
-    flex-direction: column;
-
     align-items: center;
 
     justify-content: center;
@@ -258,38 +290,18 @@ body {
 }
 
 
-.dashboard-empty-icon {
-    font-size: 27px;
-
-    line-height: 1;
-
-    color: #0f766e;
-
-    margin-bottom: 5px;
-}
-
-
-.dashboard-empty-title {
-    font-size: 12px;
-
-    color: #777;
-
-    margin-bottom: 8px;
-}
-
-
 .dashboard-add-select {
     width: 100%;
 
-    padding: 7px 5px;
+    padding: 12px 10px;
 
-    border-radius: 7px;
+    border-radius: 9px;
 
     border: 1px solid #ccd8d7;
 
     background: white;
 
-    font-size: 12px;
+    font-size: 14px;
 
     color: #555;
 }
@@ -583,6 +595,58 @@ button:active {
 
 
 /* ================================= */
+/* KHU VỰC DƯỚI MẶT TRƯỚC */
+/* ================================= */
+
+.flashcard-front-bottom {
+    flex-shrink: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 2px;
+
+    padding-top: 8px;
+}
+
+
+/* ================================= */
+/* NÚT BỎ QUA */
+/* ================================= */
+
+.skip-button {
+    width: auto;
+
+    padding: 7px 14px;
+
+    margin: 0;
+
+    background: transparent;
+
+    color: #777;
+
+    border: 1px solid #d8dddd;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    font-weight: 500;
+}
+
+.skip-button:hover {
+    background: #f5f7f7;
+
+    color: #555;
+}
+
+
+/* ================================= */
 /* GỢI Ý LẬT */
 /* ================================= */
 
@@ -595,7 +659,7 @@ button:active {
 
     color: #aaa;
 
-    padding-top: 8px;
+    padding-top: 3px;
 }
 
 
@@ -1034,6 +1098,20 @@ button:active {
     }
 
 
+    .section-heading {
+        font-size: 13px;
+
+        margin-bottom: 7px;
+    }
+
+
+    .dashboard-add-select {
+        font-size: 13px;
+
+        padding: 11px 8px;
+    }
+
+
     .flashcard {
         height: 500px;
     }
@@ -1048,6 +1126,13 @@ button:active {
         font-size: 17px;
 
         line-height: 1.48;
+    }
+
+
+    .skip-button {
+        font-size: 11px;
+
+        padding: 6px 12px;
     }
 
 
