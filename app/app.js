@@ -1,3 +1,4 @@
+```javascript
 let questions = [];
 let selectedQuestions = [];
 let currentQuestion = 0;
@@ -9,21 +10,23 @@ let searchResults = [];
 let searchKeyword = "";
 let returnToSearch = false;
 
+
 // =====================================
 // DỮ LIỆU ONLINE
 // =====================================
 
 const ONLINE_DATA_URL =
-"https://raw.githubusercontent.com/hanghuynhhcmc/ykhoahub-data/refs/heads/main/questions.json";
+    "https://raw.githubusercontent.com/hanghuynhhcmc/ykhoahub-data/refs/heads/main/questions.json";
 
 const LOCAL_CACHE_KEY =
-"ykhoahub_questions_cache";
+    "ykhoahub_questions_cache";
 
 const LEARNED_KEY =
-"ykhoahub_learned";
+    "ykhoahub_learned";
 
 const DASHBOARD_KEY =
-"ykhoahub_dashboard_subjects";
+    "ykhoahub_dashboard_subjects";
+
 
 // =====================================
 // TẢI DỮ LIỆU
@@ -31,152 +34,189 @@ const DASHBOARD_KEY =
 
 async function loadQuestions() {
 
-```
-try {
+    // =================================
+    // ONLINE
+    // =================================
 
-    const response = await fetch(
-        ONLINE_DATA_URL,
-        {
-            cache: "no-store"
-        }
-    );
+    try {
 
-    if (!response.ok) {
-        throw new Error("Không tải được dữ liệu online");
-    }
-
-    const onlineData = await response.json();
-
-    if (!Array.isArray(onlineData)) {
-        throw new Error("Dữ liệu online không hợp lệ");
-    }
-
-    questions = onlineData;
-
-    localStorage.setItem(
-        LOCAL_CACHE_KEY,
-        JSON.stringify(onlineData)
-    );
-
-    showMenu();
-
-    return;
-
-} catch (error) {
-
-    console.log(
-        "Không tải được dữ liệu online:",
-        error
-    );
-
-}
-
-
-// =================================
-// CACHE
-// =================================
-
-try {
-
-    const savedData =
-        localStorage.getItem(
-            LOCAL_CACHE_KEY
+        const response = await fetch(
+            ONLINE_DATA_URL,
+            {
+                cache: "no-store"
+            }
         );
 
-    if (savedData) {
-
-        const cachedQuestions =
-            JSON.parse(savedData);
-
-        if (Array.isArray(cachedQuestions)) {
-
-            questions =
-                cachedQuestions;
-
-            showMenu();
-
-            return;
-
+        if (!response.ok) {
+            throw new Error(
+                "Không tải được dữ liệu online"
+            );
         }
 
-    }
+        const onlineData =
+            await response.json();
 
-} catch (error) {
+        if (!Array.isArray(onlineData)) {
+            throw new Error(
+                "Dữ liệu online không hợp lệ"
+            );
+        }
 
-    console.log(
-        "Không đọc được cache:",
-        error
-    );
+        questions =
+            onlineData;
 
-}
+        // Lưu cache
+        localStorage.setItem(
+            LOCAL_CACHE_KEY,
+            JSON.stringify(onlineData)
+        );
 
+        showMenu();
 
-// =================================
-// APK
-// =================================
+        return;
 
-try {
+    } catch (error) {
 
-    const response =
-        await fetch("questions.json");
-
-    if (!response.ok) {
-
-        throw new Error(
-            "Không tìm thấy questions.json"
+        console.log(
+            "Không tải được dữ liệu online:",
+            error
         );
 
     }
 
-    const apkData =
-        await response.json();
 
-    if (!Array.isArray(apkData)) {
+    // =================================
+    // CACHE
+    // =================================
 
-        throw new Error(
-            "questions.json không hợp lệ"
+    try {
+
+        const savedData =
+            localStorage.getItem(
+                LOCAL_CACHE_KEY
+            );
+
+        if (savedData) {
+
+            const cachedQuestions =
+                JSON.parse(savedData);
+
+            if (
+                Array.isArray(
+                    cachedQuestions
+                )
+            {
+
+                questions =
+                    cachedQuestions;
+
+                showMenu();
+
+                return;
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.log(
+            "Không đọc được cache:",
+            error
         );
 
     }
 
-    questions =
-        apkData;
 
-    localStorage.setItem(
-        LOCAL_CACHE_KEY,
-        JSON.stringify(apkData)
-    );
+    // =================================
+    // LOCAL / APK
+    // =================================
 
-    showMenu();
+    try {
 
-} catch (error) {
+        const response =
+            await fetch(
+                "questions.json"
+            );
 
-    document.getElementById(
-        "app"
-    ).innerHTML = `
+        if (!response.ok) {
 
-        <div class="card">
+            throw new Error(
+                "Không tìm thấy questions.json"
+            );
 
-            <h2>Lỗi tải dữ liệu</h2>
+        }
 
-            <p>
-                Không thể tải dữ liệu câu hỏi.
-            </p>
+        const apkData =
+            await response.json();
 
-            <p>
-                ${escapeHTML(error.message)}
-            </p>
+        if (!Array.isArray(apkData)) {
 
-        </div>
+            throw new Error(
+                "questions.json không hợp lệ"
+            );
 
-    `;
+        }
+
+        questions =
+            apkData;
+
+        localStorage.setItem(
+            LOCAL_CACHE_KEY,
+            JSON.stringify(apkData)
+        );
+
+        showMenu();
+
+    } catch (error) {
+
+        console.error(
+            "Lỗi tải dữ liệu:",
+            error
+        );
+
+        const app =
+            document.getElementById(
+                "app"
+            );
+
+        if (app) {
+
+            app.innerHTML = `
+
+                <div class="card">
+
+                    <h2>
+                        Lỗi tải dữ liệu
+                    </h2>
+
+                    <p>
+                        Không thể tải dữ liệu câu hỏi.
+                    </p>
+
+                    <p>
+                        ${escapeHTML(
+                            error.message
+                        )}
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+    }
 
 }
-```
 
-}
+
+// =====================================
+// KHỞI ĐỘNG
+// =====================================
 
 loadQuestions();
+
 
 // =====================================
 // DANH SÁCH MÔN
@@ -184,21 +224,23 @@ loadQuestions();
 
 function getSubjects() {
 
-```
-return [
-    ...new Set(
-        questions
-            .map(q => q.mon)
-            .filter(q =>
-                q !== null &&
-                q !== undefined &&
-                String(q).trim() !== ""
-            )
-    )
-];
-```
+    return [
+        ...new Set(
+            questions
+                .map(
+                    q => q.mon
+                )
+                .filter(
+                    q =>
+                        q !== null &&
+                        q !== undefined &&
+                        String(q).trim() !== ""
+                )
+        )
+    ];
 
 }
+
 
 // =====================================
 // DASHBOARD MÔN
@@ -206,151 +248,175 @@ return [
 
 function getDashboardSubjects() {
 
-```
-const subjects =
-    getSubjects();
+    const subjects =
+        getSubjects();
 
-let saved = [];
+    let saved = [];
 
-try {
+    try {
 
-    saved =
-        JSON.parse(
-            localStorage.getItem(
-                DASHBOARD_KEY
-            )
-        ) || [];
+        saved =
+            JSON.parse(
+                localStorage.getItem(
+                    DASHBOARD_KEY
+                )
+            ) || [];
 
-} catch {
+    } catch {
 
-    saved = [];
+        saved = [];
 
-}
-
-
-// Chỉ giữ những môn vẫn còn trong dữ liệu
-saved =
-    saved.filter(
-        subject =>
-            subjects.includes(subject)
-    );
+    }
 
 
-// Nếu lần đầu mở app:
-// tự động lấy 4 môn đầu tiên
-if (saved.length === 0) {
+    // Chỉ giữ những môn
+    // vẫn còn trong dữ liệu
 
     saved =
-        subjects.slice(0, 4);
+        saved.filter(
+            subject =>
+                subjects.includes(
+                    subject
+                )
+        );
 
-    saveDashboardSubjects(
-        saved
+
+    // Nếu lần đầu mở app
+    // tự động lấy 4 môn đầu tiên
+
+    if (saved.length === 0) {
+
+        saved =
+            subjects.slice(0, 4);
+
+        saveDashboardSubjects(
+            saved
+        );
+
+    }
+
+
+    return saved.slice(0, 4);
+
+}
+
+
+// =====================================
+// LƯU DASHBOARD
+// =====================================
+
+function saveDashboardSubjects(
+    subjects
+) {
+
+    localStorage.setItem(
+        DASHBOARD_KEY,
+        JSON.stringify(
+            subjects.slice(0, 4)
+        )
     );
 
 }
 
-
-return saved.slice(0, 4);
-```
-
-}
-
-function saveDashboardSubjects(subjects) {
-
-```
-localStorage.setItem(
-    DASHBOARD_KEY,
-    JSON.stringify(
-        subjects.slice(0, 4)
-    )
-);
-```
-
-}
 
 // =====================================
 // XÓA MÔN KHỎI DASHBOARD
 // =====================================
 
 function removeDashboardSubject(
-subject,
-event
+    subject,
+    event
 ) {
 
-```
-if (event) {
-    event.stopPropagation();
-}
+    if (event) {
+        event.stopPropagation();
+    }
 
 
-let dashboard =
-    getDashboardSubjects();
+    let dashboard =
+        getDashboardSubjects();
 
-dashboard =
-    dashboard.filter(
-        item => item !== subject
+
+    dashboard =
+        dashboard.filter(
+            item =>
+                item !== subject
+        );
+
+
+    saveDashboardSubjects(
+        dashboard
     );
 
-saveDashboardSubjects(
-    dashboard
-);
 
-showMenu();
-```
+    showMenu();
 
 }
+
 
 // =====================================
 // THÊM MÔN VÀO DASHBOARD
 // =====================================
 
-function addDashboardSubject(subject) {
-
-```
-if (!subject) {
-    return;
-}
-
-
-let dashboard =
-    getDashboardSubjects();
-
-
-// Không cho trùng môn
-if (
-    dashboard.includes(subject)
+function addDashboardSubject(
+    subject
 ) {
 
-    alert(
-        "Môn này đã có trong Dashboard."
+    if (!subject) {
+        return;
+    }
+
+
+    let dashboard =
+        getDashboardSubjects();
+
+
+    // Không cho trùng môn
+
+    if (
+        dashboard.includes(
+            subject
+        )
+    ) {
+
+        alert(
+            "Môn này đã có trong Dashboard."
+        );
+
+        return;
+
+    }
+
+
+    // Tối đa 4 môn
+
+    if (
+        dashboard.length >= 4
+    ) {
+
+        alert(
+            "Dashboard chỉ hiển thị tối đa 4 môn."
+        );
+
+        return;
+
+    }
+
+
+    dashboard.push(
+        subject
     );
 
-    return;
 
-}
-
-
-if (dashboard.length >= 4) {
-
-    alert(
-        "Dashboard chỉ hiển thị tối đa 4 môn."
+    saveDashboardSubjects(
+        dashboard
     );
 
-    return;
+
+    showMenu();
 
 }
 
-
-dashboard.push(subject);
-
-saveDashboardSubjects(
-    dashboard
-);
-
-showMenu();
-```
-
-}
 
 // =====================================
 // ĐÃ HỌC
@@ -358,428 +424,83 @@ showMenu();
 
 function getLearned() {
 
-```
-try {
+    try {
 
-    return JSON.parse(
-        localStorage.getItem(
-            LEARNED_KEY
-        )
-    ) || {};
+        return JSON.parse(
+            localStorage.getItem(
+                LEARNED_KEY
+            )
+        ) || {};
 
-} catch {
+    } catch {
 
-    return {};
+        return {};
 
-}
-```
+    }
 
 }
 
-function saveLearned(data) {
 
-```
-localStorage.setItem(
-    LEARNED_KEY,
-    JSON.stringify(data)
-);
-```
+// =====================================
+// LƯU ĐÃ HỌC
+// =====================================
 
-}
-
-function markAsLearned(id) {
-
-```
-if (
-    id === null ||
-    id === undefined ||
-    String(id).trim() === ""
+function saveLearned(
+    data
 ) {
 
-    return;
+    localStorage.setItem(
+        LEARNED_KEY,
+        JSON.stringify(data)
+    );
 
 }
 
-const learned =
-    getLearned();
 
-learned[String(id)] =
-    true;
+// =====================================
+// ĐÁNH DẤU ĐÃ HỌC
+// =====================================
 
-saveLearned(
-    learned
-);
-```
+function markAsLearned(
+    id
+) {
+
+    if (
+        id === null ||
+        id === undefined ||
+        String(id).trim() === ""
+    ) {
+
+        return;
+
+    }
+
+
+    const learned =
+        getLearned();
+
+
+    learned[
+        String(id)
+    ] = true;
+
+
+    saveLearned(
+        learned
+    );
 
 }
+
 
 // =====================================
 // CHƯA THUỘC
 // =====================================
 
-function isNotLearned(id) {
-
-```
-const count =
-    Number(
-        localStorage.getItem(
-            "repeat_" + id
-        )
-    ) || 0;
-
-return count > 0;
-```
-
-}
-
-// =====================================
-// THỐNG KÊ MÔN
-// =====================================
-
-function getSubjectStats(subject) {
-
-```
-const subjectQuestions =
-    questions.filter(
-        q => q.mon === subject
-    );
-
-const learned =
-    getLearned();
-
-const total =
-    subjectQuestions.length;
-
-const learnedCount =
-    subjectQuestions.filter(
-        q =>
-            learned[
-                String(q.id)
-            ]
-    ).length;
-
-const reviewCount =
-    subjectQuestions.filter(
-        q =>
-            isNotLearned(q.id)
-    ).length;
-
-const remaining =
-    Math.max(
-        0,
-        total - learnedCount
-    );
-
-return {
-    total,
-    learned: learnedCount,
-    review: reviewCount,
-    remaining
-};
-```
-
-}
-
-// =====================================
-// TRANG CHỦ
-// =====================================
-
-function showMenu() {
-
-```
-returnToSearch = false;
-
-
-const subjects =
-    getSubjects();
-
-const dashboardSubjects =
-    getDashboardSubjects();
-
-
-// =================================
-// DASHBOARD 4 Ô
-// =================================
-
-let dashboardHTML = "";
-
-
-for (
-    let i = 0;
-    i < 4;
-    i++
+function isNotLearned(
+    id
 ) {
 
-    const subject =
-        dashboardSubjects[i];
-
-
-    // =============================
-    // Ô CÓ MÔN
-    // =============================
-
-    if (subject) {
-
-        const stats =
-            getSubjectStats(
-                subject
-            );
-
-
-        dashboardHTML += `
-
-            <div
-                class="subject-progress"
-                onclick="startDashboardQuiz(
-                    ${JSON.stringify(subject)}
-                )"
-            >
-
-                <button
-                    class="dashboard-remove"
-                    onclick="removeDashboardSubject(
-                        ${JSON.stringify(subject)},
-                        event
-                    )"
-                >
-                    ×
-                </button>
-
-
-                <div class="subject-name">
-
-                    ${escapeHTML(subject)}
-
-                </div>
-
-
-                <div class="progress-item">
-
-                    <span>
-                        Đã học
-                    </span>
-
-                    <strong>
-                        ${stats.learned}
-                    </strong>
-
-                </div>
-
-
-                <div class="progress-item">
-
-                    <span>
-                        Chưa thuộc
-                    </span>
-
-                    <strong>
-                        ${stats.review}
-                    </strong>
-
-                </div>
-
-
-                <div class="progress-item">
-
-                    <span>
-                        Còn lại
-                    </span>
-
-                    <strong>
-                        ${stats.remaining}
-                    </strong>
-
-                </div>
-
-            </div>
-
-        `;
-
-    }
-
-
-    // =============================
-    // Ô TRỐNG
-    // =============================
-
-    else {
-
-        const availableSubjects =
-            subjects.filter(
-                item =>
-                    !dashboardSubjects.includes(
-                        item
-                    )
-            );
-
-
-        let options = `
-
-            <option value="">
-
-                -- Chọn môn --
-
-            </option>
-
-        `;
-
-
-        availableSubjects.forEach(
-            item => {
-
-                options += `
-
-                    <option value="${escapeHTML(item)}">
-
-                        ${escapeHTML(item)}
-
-                    </option>
-
-                `;
-
-            }
-        );
-
-
-        dashboardHTML += `
-
-            <div class="dashboard-empty">
-
-                <select
-                    class="dashboard-add-select"
-                    onchange="addDashboardSubject(this.value)"
-                >
-
-                    ${options}
-
-                </select>
-
-            </div>
-
-        `;
-
-    }
-
-}
-
-
-// =================================
-// RENDER
-// =================================
-
-document.getElementById(
-    "app"
-).innerHTML = `
-
-    <div class="section-heading">
-
-        MÔN ĐANG HỌC
-
-    </div>
-
-
-    <div class="dashboard-grid">
-
-        ${dashboardHTML}
-
-    </div>
-
-
-    <div class="menu-section">
-
-        <button
-            class="menu-button secondary"
-            onclick="showNotLearned()"
-        >
-
-            📚 CÂU CHƯA THUỘC
-
-        </button>
-
-    </div>
-
-
-    <div class="search-home-section">
-
-        <button
-            class="menu-button search-home-button"
-            onclick="showSearch()"
-        >
-
-            🔎 TÌM KIẾM
-
-        </button>
-
-    </div>
-
-`;
-```
-
-}
-
-// =====================================
-// BẮT ĐẦU HỌC TỪ DASHBOARD
-// =====================================
-
-function startDashboardQuiz(subject) {
-
-```
-if (!subject) {
-    return;
-}
-
-
-selectedQuestions =
-    questions.filter(
-        q => q.mon === subject
-    );
-
-
-if (
-    selectedQuestions.length === 0
-) {
-
-    alert(
-        "Môn này chưa có câu hỏi."
-    );
-
-    return;
-
-}
-
-
-selectedQuestions =
-    createWeightedQuestions(
-        selectedQuestions
-    );
-
-
-currentQuestion = 0;
-
-returnToSearch = false;
-
-showQuestion();
-```
-
-}
-
-// =====================================
-// TẠO TẦN SUẤT
-// =====================================
-
-function createWeightedQuestions(list) {
-
-```
-let result = [];
-
-
-list.forEach(question => {
-
-    const id =
-        question.id;
-
-
-    const repeatCount =
+    const count =
         Number(
             localStorage.getItem(
                 "repeat_" + id
@@ -787,172 +508,654 @@ list.forEach(question => {
         ) || 0;
 
 
-    const weight =
-        1 + repeatCount * 2;
+    return count > 0;
+
+}
+
+
+// =====================================
+// THỐNG KÊ MÔN
+// =====================================
+
+function getSubjectStats(
+    subject
+) {
+
+    const subjectQuestions =
+        questions.filter(
+            q =>
+                q.mon === subject
+        );
+
+
+    const learned =
+        getLearned();
+
+
+    const total =
+        subjectQuestions.length;
+
+
+    const learnedCount =
+        subjectQuestions.filter(
+            q =>
+                learned[
+                    String(q.id)
+                ]
+        ).length;
+
+
+    const reviewCount =
+        subjectQuestions.filter(
+            q =>
+                isNotLearned(
+                    q.id
+                )
+        ).length;
+
+
+    const remaining =
+        Math.max(
+            0,
+            total - learnedCount
+        );
+
+
+    return {
+        total,
+        learned: learnedCount,
+        review: reviewCount,
+        remaining
+    };
+
+}
+
+
+// =====================================
+// TRANG CHỦ
+// =====================================
+
+function showMenu() {
+
+    returnToSearch = false;
+
+
+    const subjects =
+        getSubjects();
+
+
+    const dashboardSubjects =
+        getDashboardSubjects();
+
+
+    // =================================
+    // DASHBOARD 4 Ô
+    // =================================
+
+    let dashboardHTML = "";
 
 
     for (
         let i = 0;
-        i < weight;
+        i < 4;
         i++
     ) {
 
-        result.push(
-            question
-        );
+        const subject =
+            dashboardSubjects[i];
+
+
+        // =============================
+        // Ô CÓ MÔN
+        // =============================
+
+        if (subject) {
+
+            const stats =
+                getSubjectStats(
+                    subject
+                );
+
+
+            dashboardHTML += `
+
+                <div
+                    class="subject-progress"
+                    onclick='startDashboardQuiz(${JSON.stringify(subject)})'
+                >
+
+                    <button
+                        class="dashboard-remove"
+                        onclick='removeDashboardSubject(${JSON.stringify(subject)}, event)'
+                    >
+                        ×
+                    </button>
+
+
+                    <div class="subject-name">
+
+                        ${escapeHTML(
+                            subject
+                        )}
+
+                    </div>
+
+
+                    <div class="progress-item">
+
+                        <span>
+                            Đã học
+                        </span>
+
+                        <strong>
+                            ${stats.learned}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="progress-item">
+
+                        <span>
+                            Chưa thuộc
+                        </span>
+
+                        <strong>
+                            ${stats.review}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="progress-item">
+
+                        <span>
+                            Còn lại
+                        </span>
+
+                        <strong>
+                            ${stats.remaining}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+
+
+        // =============================
+        // Ô TRỐNG
+        // =============================
+
+        else {
+
+            const availableSubjects =
+                subjects.filter(
+                    item =>
+                        !dashboardSubjects.includes(
+                            item
+                        )
+                );
+
+
+            let options = `
+
+                <option value="">
+                    -- Chọn môn --
+                </option>
+
+            `;
+
+
+            availableSubjects.forEach(
+                item => {
+
+                    options += `
+
+                        <option
+                            value="${escapeHTML(item)}"
+                        >
+
+                            ${escapeHTML(item)}
+
+                        </option>
+
+                    `;
+
+                }
+            );
+
+
+            dashboardHTML += `
+
+                <div class="dashboard-empty">
+
+                    <select
+                        class="dashboard-add-select"
+                        onchange="addDashboardSubject(this.value)"
+                    >
+
+                        ${options}
+
+                    </select>
+
+                </div>
+
+            `;
+
+        }
 
     }
 
-});
 
+    // =================================
+    // RENDER
+    // =================================
 
-for (
-    let i = result.length - 1;
-    i > 0;
-    i--
-) {
-
-    const j =
-        Math.floor(
-            Math.random() *
-            (i + 1)
+    const app =
+        document.getElementById(
+            "app"
         );
 
 
-    [
-        result[i],
-        result[j]
-    ] =
-    [
-        result[j],
-        result[i]
-    ];
+    if (!app) {
+        return;
+    }
+
+
+    app.innerHTML = `
+
+        <div class="section-heading">
+
+            MÔN ĐANG HỌC
+
+        </div>
+
+
+        <div class="dashboard-grid">
+
+            ${dashboardHTML}
+
+        </div>
+
+
+        <div class="menu-section">
+
+            <button
+                class="menu-button secondary"
+                onclick="showNotLearned()"
+            >
+
+                📚 CÂU CHƯA THUỘC
+
+            </button>
+
+        </div>
+
+
+        <div class="search-home-section">
+
+            <button
+                class="menu-button search-home-button"
+                onclick="showSearch()"
+            >
+
+                🔎 TÌM KIẾM
+
+            </button>
+
+        </div>
+
+    `;
 
 }
 
 
-return result;
-```
+// =====================================
+// BẮT ĐẦU HỌC TỪ DASHBOARD
+// =====================================
+
+function startDashboardQuiz(
+    subject
+) {
+
+    if (!subject) {
+        return;
+    }
+
+
+    selectedQuestions =
+        questions.filter(
+            q =>
+                q.mon === subject
+        );
+
+
+    if (
+        selectedQuestions.length === 0
+    ) {
+
+        alert(
+            "Môn này chưa có câu hỏi."
+        );
+
+        return;
+
+    }
+
+
+    selectedQuestions =
+        createWeightedQuestions(
+            selectedQuestions
+        );
+
+
+    currentQuestion = 0;
+
+    returnToSearch = false;
+
+    showQuestion();
 
 }
+
+
+// =====================================
+// TẠO TẦN SUẤT
+// =====================================
+
+function createWeightedQuestions(
+    list
+) {
+
+    let result = [];
+
+
+    list.forEach(
+        question => {
+
+            const id =
+                question.id;
+
+
+            const repeatCount =
+                Number(
+                    localStorage.getItem(
+                        "repeat_" + id
+                    )
+                ) || 0;
+
+
+            const weight =
+                1 +
+                repeatCount * 2;
+
+
+            for (
+                let i = 0;
+                i < weight;
+                i++
+            ) {
+
+                result.push(
+                    question
+                );
+
+            }
+
+        }
+    );
+
+
+    // Trộn ngẫu nhiên
+
+    for (
+        let i = result.length - 1;
+        i > 0;
+        i--
+    ) {
+
+        const j =
+            Math.floor(
+                Math.random() *
+                (i + 1)
+            );
+
+
+        [
+            result[i],
+            result[j]
+        ] = [
+            result[j],
+            result[i]
+        ];
+
+    }
+
+
+    return result;
+
+}
+
 
 // =====================================
 // HIỆN FLASHCARD
 // =====================================
 
 function showQuestion(
-skipLearning = false
+    skipLearning = false
 ) {
 
-```
-const q =
-    selectedQuestions[
-        currentQuestion
-    ];
+    const q =
+        selectedQuestions[
+            currentQuestion
+        ];
 
 
-if (!q) {
+    if (!q) {
 
-    showResult();
+        showResult();
 
-    return;
+        return;
 
-}
-
-
-if (!skipLearning) {
-
-    markAsLearned(
-        q.id
-    );
-
-}
+    }
 
 
-isFlipped = false;
+    if (!skipLearning) {
+
+        markAsLearned(
+            q.id
+        );
+
+    }
 
 
-document.getElementById(
-    "app"
-).innerHTML = `
-
-    <div class="study-header">
-
-        <button
-            class="back-button"
-            onclick="goBackToMenu()"
-        >
-
-            ←
-
-        </button>
+    isFlipped = false;
 
 
-        <div>
-
-            <div class="study-subject">
-
-                ${escapeHTML(q.mon)}
-
-            </div>
+    const app =
+        document.getElementById(
+            "app"
+        );
 
 
-            <div class="study-counter">
-
-                Câu ${currentQuestion + 1}
-                /
-                ${selectedQuestions.length}
-
-            </div>
-
-        </div>
-
-    </div>
+    if (!app) {
+        return;
+    }
 
 
-    <div
-        class="flashcard-container"
-        onclick="flipCard()"
-    >
+    app.innerHTML = `
 
-        <div
-            id="flashcard"
-            class="flashcard"
-        >
+        <div class="study-header">
 
-
-            <!-- MẶT TRƯỚC -->
-
-            <div
-                class="flashcard-face flashcard-front"
+            <button
+                class="back-button"
+                onclick="goBackToMenu()"
             >
 
-                <div class="card-label">
+                ←
 
-                    CÂU HỎI
-
-                </div>
+            </button>
 
 
-                <div class="flashcard-question">
+            <div>
 
-                    ${formatText(
-                        q.question
+                <div class="study-subject">
+
+                    ${escapeHTML(
+                        q.mon
                     )}
 
                 </div>
 
 
-                <div class="flashcard-front-bottom">
+                <div class="study-counter">
 
-                    <button
-                        class="skip-button"
-                        onclick="skipQuestion(event)"
+                    Câu ${currentQuestion + 1}
+                    /
+                    ${selectedQuestions.length}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="flashcard-container"
+            onclick="flipCard()"
+        >
+
+            <div
+                id="flashcard"
+                class="flashcard"
+            >
+
+
+                <!-- MẶT TRƯỚC -->
+
+                <div
+                    class="flashcard-face flashcard-front"
+                >
+
+                    <div class="card-label">
+
+                        CÂU HỎI
+
+                    </div>
+
+
+                    <div class="flashcard-question">
+
+                        ${formatText(
+                            q.question
+                        )}
+
+                    </div>
+
+
+                    <div class="flashcard-front-bottom">
+
+                        <button
+                            class="skip-button"
+                            onclick="skipQuestion(event)"
+                        >
+
+                            ⏭️ BỎ QUA
+
+                        </button>
+
+
+                        <div class="flip-hint">
+
+                            chạm để lật
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- MẶT SAU -->
+
+                <div
+                    class="flashcard-face flashcard-back"
+                >
+
+                    <div
+                        class="flashcard-back-scroll"
                     >
 
-                        ⏭️ BỎ QUA
+                        <div class="card-label">
 
-                    </button>
+                            ĐÁP ÁN
+
+                        </div>
+
+
+                        <div class="flashcard-answer">
+
+                            ${formatText(
+                                q.answer
+                            )}
+
+                        </div>
+
+
+                        <div
+                            class="flashcard-actions"
+                        >
+
+                            <button
+                                class="review-button"
+                                onclick="markNotLearned(event)"
+                            >
+
+                                🔴 CHƯA THUỘC
+
+                            </button>
+
+
+                            <button
+                                class="next-button"
+                                onclick="nextQuestion(event)"
+                            >
+
+                                CÂU TIẾP THEO
+
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            class="explanation-section"
+                        >
+
+                            <div class="card-label">
+
+                                GIẢI THÍCH
+
+                            </div>
+
+
+                            <div
+                                class="flashcard-explanation"
+                            >
+
+                                ${formatText(
+                                    q.explanation
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
 
 
                     <div class="flip-hint">
@@ -965,176 +1168,89 @@ document.getElementById(
 
             </div>
 
-
-            <!-- MẶT SAU -->
-
-            <div
-                class="flashcard-face flashcard-back"
-            >
-
-                <div
-                    class="flashcard-back-scroll"
-                >
-
-                    <div class="card-label">
-
-                        ĐÁP ÁN
-
-                    </div>
-
-
-                    <div class="flashcard-answer">
-
-                        ${formatText(
-                            q.answer
-                        )}
-
-                    </div>
-
-
-                    <div
-                        class="flashcard-actions"
-                    >
-
-                        <button
-                            class="review-button"
-                            onclick="markNotLearned(event)"
-                        >
-
-                            🔴 CHƯA THUỘC
-
-                        </button>
-
-
-                        <button
-                            class="next-button"
-                            onclick="nextQuestion(event)"
-                        >
-
-                            CÂU TIẾP THEO
-
-                        </button>
-
-                    </div>
-
-
-                    <div
-                        class="explanation-section"
-                    >
-
-                        <div class="card-label">
-
-                            GIẢI THÍCH
-
-                        </div>
-
-
-                        <div
-                            class="flashcard-explanation"
-                        >
-
-                            ${formatText(
-                                q.explanation
-                            )}
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="flip-hint">
-
-                    chạm để lật
-
-                </div>
-
-            </div>
-
         </div>
 
-    </div>
 
+        <button
+            class="return-question-button"
+            onclick="flipBack(event)"
+        >
 
-    <button
-        class="return-question-button"
-        onclick="flipBack(event)"
-    >
+            ↩️ QUAY LẠI
 
-        ↩️ QUAY LẠI
+        </button>
 
-    </button>
-
-`;
-```
+    `;
 
 }
+
 
 // =====================================
 // BỎ QUA CÂU HỎI
 // =====================================
 
-function skipQuestion(event) {
+function skipQuestion(
+    event
+) {
 
-```
-if (event) {
-    event.stopPropagation();
-}
-
-
-const q =
-    selectedQuestions[
-        currentQuestion
-    ];
+    if (event) {
+        event.stopPropagation();
+    }
 
 
-if (!q) {
-    return;
-}
+    const q =
+        selectedQuestions[
+            currentQuestion
+        ];
 
 
-// Xóa toàn bộ các lần xuất hiện
-// của câu này khỏi lượt học hiện tại
-selectedQuestions =
-    selectedQuestions.filter(
-        item =>
-            String(item.id) !==
-            String(q.id)
+    if (!q) {
+        return;
+    }
+
+
+    // Xóa toàn bộ các lần xuất hiện
+    // của câu này khỏi lượt học hiện tại
+
+    selectedQuestions =
+        selectedQuestions.filter(
+            item =>
+                String(item.id) !==
+                String(q.id)
+        );
+
+
+    if (
+        selectedQuestions.length === 0
+    ) {
+
+        showResult();
+
+        return;
+
+    }
+
+
+    // Phần tử tiếp theo
+    // đã dồn vào vị trí hiện tại
+
+    if (
+        currentQuestion >=
+        selectedQuestions.length
+    ) {
+
+        currentQuestion =
+            selectedQuestions.length - 1;
+
+    }
+
+
+    showQuestion(
+        true
     );
 
-
-if (
-    selectedQuestions.length === 0
-) {
-
-    showResult();
-
-    return;
-
 }
 
-
-// Không tăng currentQuestion.
-// Vì phần tử tiếp theo đã tự động
-// dồn vào vị trí hiện tại.
-if (
-    currentQuestion >=
-    selectedQuestions.length
-) {
-
-    currentQuestion =
-        selectedQuestions.length - 1;
-
-}
-
-
-showQuestion(
-    true
-);
-```
-
-}
 
 // =====================================
 // LẬT CARD
@@ -1142,148 +1258,151 @@ showQuestion(
 
 function flipCard() {
 
-```
-const card =
-    document.getElementById(
-        "flashcard"
-    );
+    const card =
+        document.getElementById(
+            "flashcard"
+        );
 
 
-if (!card) {
-    return;
+    if (!card) {
+        return;
+    }
+
+
+    isFlipped =
+        !isFlipped;
+
+
+    if (isFlipped) {
+
+        card.classList.add(
+            "flipped"
+        );
+
+    } else {
+
+        card.classList.remove(
+            "flipped"
+        );
+
+    }
+
 }
 
 
-isFlipped =
-    !isFlipped;
+// =====================================
+// QUAY LẠI MẶT CÂU HỎI
+// =====================================
+
+function flipBack(
+    event
+) {
+
+    if (event) {
+        event.stopPropagation();
+    }
 
 
-if (isFlipped) {
+    const card =
+        document.getElementById(
+            "flashcard"
+        );
 
-    card.classList.add(
-        "flipped"
-    );
 
-} else {
+    if (!card) {
+        return;
+    }
+
+
+    isFlipped = false;
+
 
     card.classList.remove(
         "flipped"
     );
 
 }
-```
 
-}
-
-// =====================================
-// QUAY LẠI MẶT CÂU HỎI
-// =====================================
-
-function flipBack(event) {
-
-```
-if (event) {
-    event.stopPropagation();
-}
-
-
-const card =
-    document.getElementById(
-        "flashcard"
-    );
-
-
-if (!card) {
-    return;
-}
-
-
-isFlipped = false;
-
-card.classList.remove(
-    "flipped"
-);
-```
-
-}
 
 // =====================================
 // CHƯA THUỘC
 // =====================================
 
-function markNotLearned(event) {
+function markNotLearned(
+    event
+) {
 
-```
-if (event) {
-    event.stopPropagation();
+    if (event) {
+        event.stopPropagation();
+    }
+
+
+    const q =
+        selectedQuestions[
+            currentQuestion
+        ];
+
+
+    if (!q) {
+        return;
+    }
+
+
+    const key =
+        "repeat_" + q.id;
+
+
+    const current =
+        Number(
+            localStorage.getItem(
+                key
+            )
+        ) || 0;
+
+
+    localStorage.setItem(
+        key,
+        current + 1
+    );
+
+
+    nextQuestion();
+
 }
 
-
-const q =
-    selectedQuestions[
-        currentQuestion
-    ];
-
-
-if (!q) {
-    return;
-}
-
-
-const key =
-    "repeat_" + q.id;
-
-
-const current =
-    Number(
-        localStorage.getItem(
-            key
-        )
-    ) || 0;
-
-
-localStorage.setItem(
-    key,
-    current + 1
-);
-
-
-nextQuestion();
-```
-
-}
 
 // =====================================
 // CÂU TIẾP THEO
 // =====================================
 
-function nextQuestion(event) {
-
-```
-if (event) {
-    event.stopPropagation();
-}
-
-
-currentQuestion++;
-
-
-if (
-    currentQuestion >=
-    selectedQuestions.length
+function nextQuestion(
+    event
 ) {
 
-    showResult();
+    if (event) {
+        event.stopPropagation();
+    }
 
-    return;
+
+    currentQuestion++;
+
+
+    if (
+        currentQuestion >=
+        selectedQuestions.length
+    ) {
+
+        showResult();
+
+        return;
+
+    }
+
+
+    showQuestion();
 
 }
 
-
-showQuestion();
-```
-
-}
 
 // =====================================
 // VỀ TRANG TRƯỚC
@@ -1291,24 +1410,23 @@ showQuestion();
 
 function goBackToMenu() {
 
-```
-if (returnToSearch) {
+    if (returnToSearch) {
 
-    returnToSearch = false;
+        returnToSearch = false;
 
-    showSearch(
-        false
-    );
+        showSearch(
+            false
+        );
 
-    return;
+        return;
 
-}
+    }
 
 
-showMenu();
-```
+    showMenu();
 
 }
+
 
 // =====================================
 // HOÀN THÀNH
@@ -1316,76 +1434,22 @@ showMenu();
 
 function showResult() {
 
-```
-document.getElementById(
-    "app"
-).innerHTML = `
-
-    <div class="result-card">
-
-        <div class="result-icon">
-
-            🎉
-
-        </div>
+    const app =
+        document.getElementById(
+            "app"
+        );
 
 
-        <h2>
-
-            Hoàn thành!
-
-        </h2>
+    if (!app) {
+        return;
+    }
 
 
-        <p>
+    app.innerHTML = `
 
-            Bạn đã hoàn thành lượt học.
+        <div class="result-card">
 
-        </p>
-
-
-        <button
-            onclick="showMenu()"
-        >
-
-            VỀ TRANG CHỦ
-
-        </button>
-
-    </div>
-
-`;
-```
-
-}
-
-// =====================================
-// CÂU CHƯA THUỘC
-// =====================================
-
-function showNotLearned() {
-
-```
-returnToSearch = false;
-
-
-notLearnedQuestions =
-    questions.filter(
-        q => isNotLearned(q.id)
-    );
-
-
-if (
-    notLearnedQuestions.length === 0
-) {
-
-    document.getElementById(
-        "app"
-    ).innerHTML = `
-
-        <div class="card empty-state">
-
-            <div class="empty-icon">
+            <div class="result-icon">
 
                 🎉
 
@@ -1394,15 +1458,14 @@ if (
 
             <h2>
 
-                Chưa có câu nào
+                Hoàn thành!
 
             </h2>
 
 
             <p>
 
-                Bạn chưa đánh dấu câu nào
-                là "Chưa thuộc".
+                Bạn đã hoàn thành lượt học.
 
             </p>
 
@@ -1411,7 +1474,7 @@ if (
                 onclick="showMenu()"
             >
 
-                ← VỀ TRANG CHỦ
+                VỀ TRANG CHỦ
 
             </button>
 
@@ -1419,230 +1482,334 @@ if (
 
     `;
 
-    return;
-
 }
 
 
-let html = `
+// =====================================
+// CÂU CHƯA THUỘC
+// =====================================
 
-    <div class="page-header">
+function showNotLearned() {
 
-        <button
-            class="back-button"
-            onclick="showMenu()"
-        >
-
-            ←
-
-        </button>
+    returnToSearch = false;
 
 
-        <div>
-
-            <h2>
-
-                📚 CÂU CHƯA THUỘC
-
-            </h2>
-
-
-            <p>
-
-                ${notLearnedQuestions.length} câu
-
-            </p>
-
-        </div>
-
-    </div>
+    notLearnedQuestions =
+        questions.filter(
+            q =>
+                isNotLearned(
+                    q.id
+                )
+        );
 
 
-    <div class="not-learned-list">
+    if (
+        notLearnedQuestions.length === 0
+    ) {
 
-`;
+        const app =
+            document.getElementById(
+                "app"
+            );
 
 
-notLearnedQuestions.forEach(
-    (q, index) => {
+        if (app) {
 
-        html += `
+            app.innerHTML = `
 
-            <div
-                class="not-learned-item"
-                onclick="startNotLearned(${index})"
+                <div class="card empty-state">
+
+                    <div class="empty-icon">
+
+                        🎉
+
+                    </div>
+
+
+                    <h2>
+
+                        Chưa có câu nào
+
+                    </h2>
+
+
+                    <p>
+
+                        Bạn chưa đánh dấu câu nào
+                        là "Chưa thuộc".
+
+                    </p>
+
+
+                    <button
+                        onclick="showMenu()"
+                    >
+
+                        ← VỀ TRANG CHỦ
+
+                    </button>
+
+                </div>
+
+            `;
+
+        }
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <div class="page-header">
+
+            <button
+                class="back-button"
+                onclick="showMenu()"
             >
 
-                <div
-                    class="not-learned-subject"
-                >
+                ←
 
-                    ${escapeHTML(q.mon)}
-
-                </div>
+            </button>
 
 
-                <div
-                    class="not-learned-question"
-                >
+            <div>
 
-                    ${formatText(
-                        q.question
-                    )}
+                <h2>
 
-                </div>
+                    📚 CÂU CHƯA THUỘC
+
+                </h2>
+
+
+                <p>
+
+                    ${notLearnedQuestions.length} câu
+
+                </p>
 
             </div>
 
-        `;
+        </div>
+
+
+        <div class="not-learned-list">
+
+    `;
+
+
+    notLearnedQuestions.forEach(
+        (
+            q,
+            index
+        ) => {
+
+            html += `
+
+                <div
+                    class="not-learned-item"
+                    onclick="startNotLearned(${index})"
+                >
+
+                    <div
+                        class="not-learned-subject"
+                    >
+
+                        ${escapeHTML(
+                            q.mon
+                        )}
+
+                    </div>
+
+
+                    <div
+                        class="not-learned-question"
+                    >
+
+                        ${formatText(
+                            q.question
+                        )}
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+        </div>
+
+    `;
+
+
+    const app =
+        document.getElementById(
+            "app"
+        );
+
+
+    if (app) {
+
+        app.innerHTML =
+            html;
 
     }
-);
-
-
-html += `
-
-    </div>
-
-`;
-
-
-document.getElementById(
-    "app"
-).innerHTML =
-    html;
-```
 
 }
+
 
 // =====================================
 // HỌC CÂU CHƯA THUỘC
 // =====================================
 
-function startNotLearned(index) {
+function startNotLearned(
+    index
+) {
 
-```
-returnToSearch = false;
+    returnToSearch = false;
 
 
-selectedQuestions =
-    notLearnedQuestions;
+    selectedQuestions =
+        notLearnedQuestions;
 
-currentQuestion =
-    index;
 
-showQuestion();
-```
+    currentQuestion =
+        index;
+
+
+    showQuestion();
 
 }
+
 
 // =====================================
 // TÌM KIẾM
 // =====================================
 
 function showSearch(
-resetSearch = true
+    resetSearch = true
 ) {
 
-```
-if (resetSearch) {
+    if (resetSearch) {
 
-    searchKeyword = "";
+        searchKeyword = "";
 
-    searchResults = [];
+        searchResults = [];
 
-}
-
-
-document.getElementById(
-    "app"
-).innerHTML = `
-
-    <div class="page-header">
-
-        <button
-            class="back-button"
-            onclick="showMenu()"
-        >
-
-            ←
-
-        </button>
+    }
 
 
-        <div>
-
-            <h2>
-
-                🔎 TÌM KIẾM
-
-            </h2>
+    const app =
+        document.getElementById(
+            "app"
+        );
 
 
-            <p>
+    if (!app) {
+        return;
+    }
 
-                Tìm trong câu hỏi,
-                đáp án và giải thích
 
-            </p>
+    app.innerHTML = `
+
+        <div class="page-header">
+
+            <button
+                class="back-button"
+                onclick="showMenu()"
+            >
+
+                ←
+
+            </button>
+
+
+            <div>
+
+                <h2>
+
+                    🔎 TÌM KIẾM
+
+                </h2>
+
+
+                <p>
+
+                    Tìm trong câu hỏi,
+                    đáp án và giải thích
+
+                </p>
+
+            </div>
 
         </div>
 
-    </div>
+
+        <div class="search-box">
+
+            <input
+                id="searchInput"
+                type="search"
+                inputmode="search"
+                enterkeyhint="search"
+                placeholder="Nhập từ khóa..."
+                value="${escapeHTML(
+                    searchKeyword
+                )}"
+                oninput="performSearch()"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+            >
+
+        </div>
 
 
-    <div class="search-box">
+        <div id="searchResults">
 
-        <input
-            id="searchInput"
-            type="search"
-            inputmode="search"
-            enterkeyhint="search"
-            placeholder="Nhập từ khóa..."
-            value="${escapeHTML(searchKeyword)}"
-            oninput="performSearch()"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-        >
+            ${renderSearchResultsHTML()}
 
-    </div>
+        </div>
+
+    `;
 
 
-    <div id="searchResults">
+    // Tự động focus
+    // khi mở tìm kiếm mới
 
-        ${renderSearchResultsHTML()}
+    if (resetSearch) {
 
-    </div>
+        setTimeout(
+            () => {
 
-`;
+                const input =
+                    document.getElementById(
+                        "searchInput"
+                    );
 
 
-// Khi mở tìm kiếm mới:
-// tự động đưa con trỏ vào ô tìm kiếm
-if (resetSearch) {
+                if (input) {
 
-    setTimeout(() => {
+                    input.focus();
 
-        const input =
-            document.getElementById(
-                "searchInput"
-            );
+                    input.click();
 
-        if (input) {
+                }
 
-            input.focus();
+            },
+            150
+        );
 
-            input.click();
-
-        }
-
-    }, 150);
+    }
 
 }
-```
 
-}
 
 // =====================================
 // HIỂN THỊ KẾT QUẢ TÌM KIẾM
@@ -1650,285 +1817,301 @@ if (resetSearch) {
 
 function renderSearchResultsHTML() {
 
-```
-if (!searchKeyword) {
+    if (!searchKeyword) {
 
-    return `
+        return `
 
-        <div class="search-empty">
+            <div class="search-empty">
 
-            Nhập từ khóa để tìm kiếm.
-
-        </div>
-
-    `;
-
-}
-
-
-if (
-    searchResults.length === 0
-) {
-
-    return `
-
-        <div class="search-empty">
-
-            Không tìm thấy câu hỏi.
-
-        </div>
-
-    `;
-
-}
-
-
-let html = `
-
-    <div class="search-count">
-
-        Tìm thấy ${searchResults.length} câu
-
-    </div>
-
-`;
-
-
-searchResults.forEach(
-    (q, index) => {
-
-        html += `
-
-            <div
-                class="search-result"
-                onclick="openSearchResult(${index})"
-            >
-
-                <div
-                    class="search-result-subject"
-                >
-
-                    ${escapeHTML(q.mon)}
-
-                </div>
-
-
-                <div
-                    class="search-result-question"
-                >
-
-                    ${formatText(
-                        q.question
-                    )}
-
-                </div>
+                Nhập từ khóa để tìm kiếm.
 
             </div>
 
         `;
 
     }
-);
 
 
-return html;
-```
+    if (
+        searchResults.length === 0
+    ) {
+
+        return `
+
+            <div class="search-empty">
+
+                Không tìm thấy câu hỏi.
+
+            </div>
+
+        `;
+
+    }
+
+
+    let html = `
+
+        <div class="search-count">
+
+            Tìm thấy ${searchResults.length} câu
+
+        </div>
+
+    `;
+
+
+    searchResults.forEach(
+        (
+            q,
+            index
+        ) => {
+
+            html += `
+
+                <div
+                    class="search-result"
+                    onclick="openSearchResult(${index})"
+                >
+
+                    <div
+                        class="search-result-subject"
+                    >
+
+                        ${escapeHTML(
+                            q.mon
+                        )}
+
+                    </div>
+
+
+                    <div
+                        class="search-result-question"
+                    >
+
+                        ${formatText(
+                            q.question
+                        )}
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    return html;
 
 }
 
+
 // =====================================
-// TÌM KIẾM
+// THỰC HIỆN TÌM KIẾM
 // =====================================
 
 function performSearch() {
 
-```
-const input =
-    document.getElementById(
-        "searchInput"
-    );
+    const input =
+        document.getElementById(
+            "searchInput"
+        );
 
 
-if (!input) {
-    return;
-}
+    if (!input) {
+        return;
+    }
 
 
-searchKeyword =
-    input.value.trim();
+    searchKeyword =
+        input.value.trim();
 
 
-const keyword =
-    normalizeText(
-        searchKeyword
-    );
+    const keyword =
+        normalizeText(
+            searchKeyword
+        );
 
 
-const results =
-    keyword === ""
-        ? []
-        : questions.filter(q => {
+    const results =
+        keyword === ""
+            ? []
+            : questions.filter(
+                q => {
 
-            const question =
-                normalizeText(
-                    q.question
-                );
-
-            const answer =
-                normalizeText(
-                    q.answer
-                );
-
-            const explanation =
-                normalizeText(
-                    q.explanation
-                );
+                    const question =
+                        normalizeText(
+                            q.question
+                        );
 
 
-            return (
+                    const answer =
+                        normalizeText(
+                            q.answer
+                        );
 
-                question.includes(
-                    keyword
-                ) ||
 
-                answer.includes(
-                    keyword
-                ) ||
+                    const explanation =
+                        normalizeText(
+                            q.explanation
+                        );
 
-                explanation.includes(
-                    keyword
-                )
 
+                    return (
+
+                        question.includes(
+                            keyword
+                        ) ||
+
+                        answer.includes(
+                            keyword
+                        ) ||
+
+                        explanation.includes(
+                            keyword
+                        )
+
+                    );
+
+                }
             );
 
-        });
+
+    searchResults =
+        results;
 
 
-searchResults =
-    results;
+    const container =
+        document.getElementById(
+            "searchResults"
+        );
 
 
-const container =
-    document.getElementById(
-        "searchResults"
-    );
+    if (!container) {
+        return;
+    }
 
 
-if (!container) {
-    return;
-}
-
-
-container.innerHTML =
-    renderSearchResultsHTML();
-```
+    container.innerHTML =
+        renderSearchResultsHTML();
 
 }
+
 
 // =====================================
-// MỞ KẾT QUẢ
+// MỞ KẾT QUẢ TÌM KIẾM
 // =====================================
 
-function openSearchResult(index) {
+function openSearchResult(
+    index
+) {
 
-```
-selectedQuestions =
-    searchResults;
+    selectedQuestions =
+        searchResults;
 
-currentQuestion =
-    index;
 
-returnToSearch = true;
+    currentQuestion =
+        index;
 
-showQuestion();
-```
+
+    returnToSearch = true;
+
+
+    showQuestion();
 
 }
+
 
 // =====================================
 // CHUẨN HÓA TÌM KIẾM
 // =====================================
 
-function normalizeText(text) {
+function normalizeText(
+    text
+) {
 
-```
-return String(
-    text ?? ""
-)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(
-        /[\u0300-\u036f]/g,
-        ""
+    return String(
+        text ?? ""
     )
-    .replace(
-        /đ/g,
-        "d"
-    );
-```
+        .toLowerCase()
+        .normalize(
+            "NFD"
+        )
+        .replace(
+            /[\u0300-\u036f]/g,
+            ""
+        )
+        .replace(
+            /đ/g,
+            "d"
+        );
 
 }
+
 
 // =====================================
 // FORMAT TEXT
 // =====================================
 
-function formatText(text) {
-
-```
-if (
-    text === null ||
-    text === undefined
+function formatText(
+    text
 ) {
 
-    return "";
+    if (
+        text === null ||
+        text === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return escapeHTML(
+        String(text)
+    ).replace(
+        /\n/g,
+        "<br>"
+    );
 
 }
 
-
-return escapeHTML(
-    String(text)
-).replace(
-    /\n/g,
-    "<br>"
-);
-```
-
-}
 
 // =====================================
 // BẢO VỆ HTML
 // =====================================
 
-function escapeHTML(text) {
+function escapeHTML(
+    text
+) {
 
-```
-return String(text)
+    return String(text)
 
-    .replace(
-        /&/g,
-        "&amp;"
-    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
 
-    .replace(
-        /</g,
-        "&lt;"
-    )
+        .replace(
+            /</g,
+            "&lt;"
+        )
 
-    .replace(
-        />/g,
-        "&gt;"
-    )
+        .replace(
+            />/g,
+            "&gt;"
+        )
 
-    .replace(
-        /"/g,
-        "&quot;"
-    )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
 
-    .replace(
-        /'/g,
-        "&#039;"
-    );
-```
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
+```
