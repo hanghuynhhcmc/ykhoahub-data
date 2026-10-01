@@ -951,17 +951,6 @@ function showQuestion(
     }
 
 
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
-
     const questionType =
         getQuestionType(
             q
@@ -1002,7 +991,7 @@ function showQuestion(
 
 
 // =====================================
-// TẠO HEADER CÂU HỎI
+// HEADER CÂU HỎI
 // =====================================
 
 function createStudyHeader(
@@ -1010,6 +999,20 @@ function createStudyHeader(
 ) {
 
     return `
+
+        <div class="study-top-area">
+
+            <button
+                id="topNextButton"
+                class="next-button top-next-button"
+                onclick="nextQuestion(event)"
+                style="display:none;"
+            >
+                CÂU TIẾP THEO →
+            </button>
+
+        </div>
+
 
         <div class="study-header">
 
@@ -1021,7 +1024,7 @@ function createStudyHeader(
             </button>
 
 
-            <div>
+            <div class="study-header-info">
 
                 <div class="study-subject">
 
@@ -1039,18 +1042,6 @@ function createStudyHeader(
                 </div>
 
             </div>
-
-
-            <button
-                id="topNextButton"
-                class="next-button top-next-button"
-                onclick="nextQuestion(event)"
-                style="display:none;"
-            >
-
-                CÂU TIẾP THEO →
-
-            </button>
 
         </div>
 
@@ -1096,11 +1087,16 @@ function showMCQQuestion(
             choicesHTML += `
 
                 <button
+                    type="button"
                     class="answer-choice"
                     onclick="checkMCQAnswer(${index}, event)"
                 >
 
-                    ${formatText(choice)}
+                    <span class="choice-text">
+
+                        ${formatText(choice)}
+
+                    </span>
 
                 </button>
 
@@ -1350,7 +1346,7 @@ function checkMCQAnswer(
         if (nextButton) {
 
             nextButton.style.display =
-                "inline-flex";
+                "flex";
 
         }
 
@@ -1364,8 +1360,20 @@ function checkMCQAnswer(
     // TRẢ LỜI SAI
     // =================================
 
-    buttons[index].classList.add(
-        "wrong"
+    // Không tô màu đáp án sai.
+    // Reset toàn bộ lựa chọn về trạng thái bình thường.
+
+    buttons.forEach(
+        button => {
+
+            button.classList.remove(
+                "wrong",
+                "correct"
+            );
+
+            button.disabled = false;
+
+        }
     );
 
 
@@ -1460,6 +1468,7 @@ function showFillBlankQuestion(
 
 
                 <button
+                    type="button"
                     class="check-answer-button"
                     onclick="checkFillBlankAnswer(event)"
                 >
@@ -1508,7 +1517,7 @@ function showFillBlankQuestion(
 
 
 // =====================================
-// ENTER ĐỂ KIỂM TRA ĐIỀN KHUYẾT
+// ENTER ĐỂ KIỂM TRA
 // =====================================
 
 function handleFillBlankKey(
@@ -1686,7 +1695,7 @@ function checkFillBlankAnswer(
         if (nextButton) {
 
             nextButton.style.display =
-                "inline-flex";
+                "flex";
 
         }
 
@@ -1805,7 +1814,6 @@ function normalizeAnswer(
 
 // =====================================
 // CÂU HỎI THƯỜNG
-// KHÔNG CÒN FLASHCARD
 // =====================================
 
 function showFlashcardQuestion(
@@ -1909,6 +1917,7 @@ function showFlashcardQuestion(
                 <div class="flashcard-actions">
 
                     <button
+                        type="button"
                         class="review-button"
                         onclick="markNotLearned(event)"
                     >
@@ -1929,7 +1938,7 @@ function showFlashcardQuestion(
 
 
 // =====================================
-// XEM ĐÁP ÁN CÂU THƯỜNG
+// XEM ĐÁP ÁN
 // =====================================
 
 function showFlashcardAnswer(
@@ -1979,7 +1988,7 @@ function showFlashcardAnswer(
     if (nextButton) {
 
         nextButton.style.display =
-            "inline-flex";
+            "flex";
 
     }
 
@@ -2127,6 +2136,7 @@ function showResult() {
 
 
             <button
+                type="button"
                 onclick="showMenu()"
             >
 
@@ -2194,6 +2204,7 @@ function showNotLearned() {
 
 
                     <button
+                        type="button"
                         onclick="showMenu()"
                     >
 
