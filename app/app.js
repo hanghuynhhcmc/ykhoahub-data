@@ -8,13 +8,19 @@ let searchResults = [];
 let searchKeyword = "";
 let returnToSearch = false;
 
+// Đếm số lần trả lời sai cho câu fill-blank hiện tại
+let fillBlankWrongCount = 0;
+
+// Lưu timer để xóa dấu ✗ trên MCQ
+let mcqWrongTimer = null;
+
 
 // =====================================
 // DỮ LIỆU ONLINE
 // =====================================
 
 const ONLINE_DATA_URL =
-    "https://raw.githubusercontent.com/hanghuynhhcmc/ykhoahub-data/refs/heads/main/questions.json";
+    "https://raw.githubusercontent.com/hanghuynhhmc/ykhoahub-data/refs/heads/main/questions.json";
 
 const LOCAL_CACHE_KEY =
     "ykhoahub_questions_cache";
@@ -565,7 +571,6 @@ function showMenu() {
         getDashboardSubjects();
 
 
-    // Danh sách môn chưa có trên dashboard
     const availableSubjects =
         subjects.filter(
             item =>
@@ -927,6 +932,15 @@ function getQuestionType(
 function showQuestion(
     skipLearning = false
 ) {
+
+    // Reset đếm số lần sai mỗi khi sang câu mới
+    fillBlankWrongCount = 0;
+
+    if (mcqWrongTimer) {
+        clearTimeout(mcqWrongTimer);
+        mcqWrongTimer = null;
+    }
+
 
     const q =
         selectedQuestions[
@@ -1308,6 +1322,11 @@ function checkMCQAnswer(
 
     if (isCorrect) {
 
+        if (mcqWrongTimer) {
+            clearTimeout(mcqWrongTimer);
+            mcqWrongTimer = null;
+        }
+
         buttons.forEach(
             (
                 button,
@@ -1315,6 +1334,10 @@ function checkMCQAnswer(
             ) => {
 
                 button.disabled = true;
+
+                button.classList.remove(
+                    "wrong"
+                );
 
 
                 const answer =
@@ -1390,56 +1413,65 @@ function checkMCQAnswer(
     // TRẢ LỜI SAI
     // =================================
 
-    // Không tô màu đáp án sai.
-    // Reset toàn bộ lựa chọn về trạng thái bình thường.
+    // Hiện dấu ✗ đỏ ngay trên lựa chọn vừa bấm,
+    // tự ẩn sau 600ms để người dùng thử lại.
 
     buttons.forEach(
-        button => {
-
-            button.classList.remove(
-                "wrong",
-                "correct"
-            );
+        (
+            button,
+            buttonIndex
+        ) => {
 
             button.disabled = false;
+
+            button.classList.remove(
+                "correct",
+                "wrong"
+            );
+
+
+            if (
+                buttonIndex === index
+            ) {
+
+                button.classList.add(
+                    "wrong"
+                );
+
+            }
 
         }
     );
 
 
-    const hint =
-        String(
-            q.hint || ""
-        ).trim();
+    if (mcqWrongTimer) {
+        clearTimeout(mcqWrongTimer);
+    }
 
 
-    feedback.innerHTML = `
+    mcqWrongTimer =
+        setTimeout(
+            () => {
 
-        <div class="wrong-feedback">
+                buttons.forEach(
+                    button => {
 
-            <div class="feedback-title">
+                        button.classList.remove(
+                            "wrong"
+                        );
 
-                ❌ Chưa chính xác
+                    }
+                );
 
-            </div>
+                mcqWrongTimer = null;
+
+            },
+            600
+        );
 
 
-            <div class="hint-box">
-
-                💡 <strong>Gợi ý:</strong>
-
-                ${
-                    hint
-                        ? formatText(hint)
-                        : "Hãy thử lại."
-                }
-
-            </div>
-
-        </div>
-
-    `;
-
+    // Không hiện chữ "Chưa chính xác" nữa
+    feedback.innerHTML = "";
 
     explanation.innerHTML = "";
 
@@ -1738,6 +1770,9 @@ function checkFillBlankAnswer(
     // SAI
     // =================================
 
+    fillBlankWrongCount++;
+
+
     input.classList.remove(
         "correct-input"
     );
@@ -1748,10 +1783,106 @@ function checkFillBlankAnswer(
     );
 
 
+    // Nếu đã sai quá 2 lần thì hiện đáp án luôn
+    if (fillBlankWrongCount >= 3) {
+
+        input.disabled = true;
+
+
+        const checkButton =
+            document.querySelector(
+                ".check-answer-button"
+            );
+
+
+        if (checkButton) {
+            checkButton.disabled = true;
+        }
+
+
+        const correctAnswers =
+            acceptedAnswers.join(" / ");
+
+
+        feedback.innerHTML = `
+
+            <div class="wrong-feedback">
+
+                <div class="feedback-title">
+
+                    ❌ Chưa chính xác
+
+                </div>
+
+
+                <div class="hint-box">
+
+                    Đáp án đúng:
+
+                    <strong>
+                        ${formatText(correctAnswers)}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        explanation.innerHTML = `
+
+            <div class="explanation-title">
+
+                GIẢI THÍCH
+
+            </div>
+
+
+            <div class="feedback-explanation">
+
+                ${
+                    q.explanation
+                        ? formatText(
+                            q.explanation
+                        )
+                        : "Không có giải thích cho câu này."
+                }
+
+            </div>
+
+        `;
+
+
+        const bottomNav =
+            document.getElementById(
+                "bottomNav"
+            );
+
+
+        if (bottomNav) {
+
+            bottomNav.style.display =
+                "block";
+
+        }
+
+
+        return;
+
+    }
+
+
+    // Còn lượt thử → hiện gợi ý và số lần còn lại
+
     const hint =
         String(
             q.hint || ""
         ).trim();
+
+
+    const remaining =
+        3 - fillBlankWrongCount;
 
 
     feedback.innerHTML = `
@@ -1774,6 +1905,12 @@ function checkFillBlankAnswer(
                         ? formatText(hint)
                         : "Hãy thử lại."
                 }
+
+                <br>
+
+                <small>
+                    Còn ${remaining} lần thử.
+                </small>
 
             </div>
 
@@ -1889,7 +2026,8 @@ function showFlashcardQuestion(
                 onclick="toggleFlashcardAnswer(event)"
             >
 
-                👁 XEM ĐÁP ÁN
+                <span class="toggle-icon">👁️</span>
+                <span class="toggle-label">Xem đáp án</span>
 
             </button>
 
@@ -1990,14 +2128,32 @@ function toggleFlashcardAnswer(
         "none";
 
 
+    const icon =
+        button.querySelector(
+            ".toggle-icon"
+        );
+
+
+    const label =
+        button.querySelector(
+            ".toggle-label"
+        );
+
+
     if (isHidden) {
 
         section.style.display =
             "block";
 
 
-        button.innerHTML =
-            "🙈 ẨN ĐÁP ÁN";
+        if (icon) {
+            icon.textContent = "🙈";
+        }
+
+
+        if (label) {
+            label.textContent = "Ẩn đáp án";
+        }
 
     } else {
 
@@ -2005,8 +2161,14 @@ function toggleFlashcardAnswer(
             "none";
 
 
-        button.innerHTML =
-            "👁 XEM ĐÁP ÁN";
+        if (icon) {
+            icon.textContent = "👁️";
+        }
+
+
+        if (label) {
+            label.textContent = "Xem đáp án";
+        }
 
     }
 

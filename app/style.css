@@ -526,6 +526,11 @@ button:disabled {
     overflow: visible;
 
     white-space: normal;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
 }
 
 
@@ -585,7 +590,9 @@ button:disabled {
 }
 
 
-/* Đáp án đúng: tô xanh + tick ✓ */
+/* =====================================
+   ĐÁP ÁN ĐÚNG: TÔ XANH + TICK ✓
+===================================== */
 
 .answer-choice.correct {
     background: #dcfce7;
@@ -610,12 +617,30 @@ button:disabled {
 }
 
 
+/* =====================================
+   ĐÁP ÁN SAI: DẤU ✗ ĐỎ
+===================================== */
+
 .answer-choice.wrong {
-    background: #ffffff;
+    background: #fef2f2;
 
-    border-color: #d1d5db;
+    border-color: #ef4444;
 
-    color: #1f2937;
+    color: #991b1b;
+}
+
+
+.answer-choice.wrong .choice-tick {
+    background: #ef4444;
+
+    border-color: #ef4444;
+
+    color: #ffffff;
+}
+
+
+.answer-choice.wrong .choice-tick::before {
+    content: "✗";
 }
 
 
@@ -659,6 +684,17 @@ button:disabled {
 
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+
+.hint-box small {
+    display: inline-block;
+
+    margin-top: 6px;
+
+    color: #6b7280;
+
+    font-size: 12px;
 }
 
 
@@ -797,7 +833,13 @@ button:disabled {
 /* Nút XEM ĐÁP ÁN canh giữa, ngay dưới câu hỏi */
 
 .toggle-answer-button {
-    display: block;
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
 
     width: 100%;
     max-width: 260px;
@@ -823,11 +865,29 @@ button:disabled {
     font-size: 14px;
 
     text-align: center;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
 }
 
 
 .toggle-answer-button:hover {
     background: #dbeafe;
+}
+
+
+.toggle-answer-button .toggle-icon {
+    font-size: 16px;
+
+    line-height: 1;
+}
+
+
+.toggle-answer-button .toggle-label {
+    font-size: 14px;
+
+    font-weight: 700;
 }
 
 
@@ -1417,6 +1477,16 @@ button.skip-button {
 
         min-height: 46px;
 
+        font-size: 13px;
+    }
+
+
+    .toggle-answer-button .toggle-icon {
+        font-size: 15px;
+    }
+
+
+    .toggle-answer-button .toggle-label {
         font-size: 13px;
     }
 
