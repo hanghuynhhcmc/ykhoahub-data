@@ -1842,7 +1842,7 @@ function normalizeAnswer(
 
 
 // =====================================
-// CÂU HỎI THƯỜNG (KHÔNG LẬT)
+// CÂU HỎI THƯỜNG (ẨN ĐÁP ÁN)
 // =====================================
 
 function showFlashcardQuestion(
@@ -1882,44 +1882,64 @@ function showFlashcardQuestion(
             </div>
 
 
-            <div class="answer-section">
+            <button
+                type="button"
+                id="toggleAnswerButton"
+                class="toggle-answer-button"
+                onclick="toggleFlashcardAnswer(event)"
+            >
 
-                <div class="card-label">
+                👁 XEM ĐÁP ÁN
 
-                    ĐÁP ÁN
+            </button>
+
+
+            <div
+                id="flashcardAnswerSection"
+                class="flashcard-answer-section"
+                style="display:none;"
+            >
+
+                <div class="answer-section">
+
+                    <div class="card-label">
+
+                        ĐÁP ÁN
+
+                    </div>
+
+
+                    <div class="flashcard-answer">
+
+                        ${formatText(
+                            q.answer
+                        )}
+
+                    </div>
 
                 </div>
 
 
-                <div class="flashcard-answer">
+                <div class="explanation-section">
 
-                    ${formatText(
-                        q.answer
-                    )}
+                    <div class="card-label">
 
-                </div>
+                        GIẢI THÍCH
 
-            </div>
+                    </div>
 
 
-            <div class="explanation-section">
+                    <div class="flashcard-explanation">
 
-                <div class="card-label">
+                        ${
+                            q.explanation
+                                ? formatText(
+                                    q.explanation
+                                )
+                                : "Không có giải thích cho câu này."
+                        }
 
-                    GIẢI THÍCH
-
-                </div>
-
-
-                <div class="flashcard-explanation">
-
-                    ${
-                        q.explanation
-                            ? formatText(
-                                q.explanation
-                            )
-                            : "Không có giải thích cho câu này."
-                    }
+                    </div>
 
                 </div>
 
@@ -1931,6 +1951,64 @@ function showFlashcardQuestion(
         </div>
 
     `;
+
+}
+
+
+// =====================================
+// ẨN / HIỆN ĐÁP ÁN
+// =====================================
+
+function toggleFlashcardAnswer(
+    event
+) {
+
+    if (event) {
+        event.stopPropagation();
+    }
+
+
+    const section =
+        document.getElementById(
+            "flashcardAnswerSection"
+        );
+
+
+    const button =
+        document.getElementById(
+            "toggleAnswerButton"
+        );
+
+
+    if (!section || !button) {
+        return;
+    }
+
+
+    const isHidden =
+        section.style.display ===
+        "none";
+
+
+    if (isHidden) {
+
+        section.style.display =
+            "block";
+
+
+        button.innerHTML =
+            "🙈 ẨN ĐÁP ÁN";
+
+    } else {
+
+        section.style.display =
+            "none";
+
+
+        button.innerHTML =
+            "👁 XEM ĐÁP ÁN";
+
+    }
 
 }
 

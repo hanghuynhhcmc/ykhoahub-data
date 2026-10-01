@@ -786,11 +786,57 @@ button:disabled {
 
 
 /* =====================================
-   NORMAL QUESTION
+   NORMAL QUESTION (ẨN ĐÁP ÁN)
 ===================================== */
 
 .normal-question-card .answer-section {
     margin-top: 4px;
+}
+
+
+/* Nút XEM ĐÁP ÁN canh giữa, ngay dưới câu hỏi */
+
+.toggle-answer-button {
+    display: block;
+
+    width: 100%;
+    max-width: 260px;
+
+    margin: 0 auto 4px;
+
+    min-height: 46px;
+
+    padding:
+        10px 18px;
+
+    border:
+        1px solid #bfdbfe;
+
+    border-radius: 12px;
+
+    background: #eff6ff;
+
+    color: #1d4ed8;
+
+    font-weight: 700;
+
+    font-size: 14px;
+
+    text-align: center;
+}
+
+
+.toggle-answer-button:hover {
+    background: #dbeafe;
+}
+
+
+.flashcard-answer-section {
+    width: 100%;
+
+    margin-top: 16px;
+
+    overflow: visible;
 }
 
 
@@ -1363,6 +1409,15 @@ button.skip-button {
 
         overflow-wrap: anywhere;
         word-break: break-word;
+    }
+
+
+    .toggle-answer-button {
+        max-width: 100%;
+
+        min-height: 46px;
+
+        font-size: 13px;
     }
 
 
