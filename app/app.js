@@ -675,27 +675,36 @@ function renderFillBlank(q, state) {
     }
 }
 
-/** Tách question thành 2 phần: câu hỏi dẫn + đoạn có {{n}} */
+/**
+ * Tách question thành 2 phần:
+ *  - questionPart: phần câu hỏi dẫn (trước "Đáp án:")
+ *  - answerTemplate: phần chứa {{n}} (sau "Đáp án:")
+ *
+ * Format thực tế:
+ *   <câu hỏi dẫn>
+ *   Đáp án:
+ *   <đoạn có {{1}}, {{2}}, ...>
+ *
+ * Nếu không có "Đáp án:", coi toàn bộ là câu hỏi dẫn.
+ */
 function splitFillBlankQuestion(question) {
     const text = String(question ?? "");
 
-    const match = text.match(/\{\{1\}\}/);
+    const dapAnRegex = /Đáp\s*án\s*:/i;
+    const match = text.match(dapAnRegex);
+
     if (!match) {
         return {
-            questionPart: formatText(text),
+            questionPart: formatText(text.trim()),
             answerTemplate: "",
         };
     }
 
-    let questionPartRaw = text.slice(0, match.index);
-    let answerTemplate = text.slice(match.index);
+    const dapAnIdx = match.index;
+    const afterDapAn = dapAnIdx + match[0].length;
 
-    const dapAnIdx = questionPartRaw.lastIndexOf("Đáp án:");
-    if (dapAnIdx !== -1) {
-        questionPartRaw = questionPartRaw.slice(0, dapAnIdx);
-    }
-
-    questionPartRaw = questionPartRaw.trim();
+    let questionPartRaw = text.slice(0, dapAnIdx).trim();
+    let answerTemplate = text.slice(afterDapAn).trim();
 
     if (!questionPartRaw) {
         questionPartRaw = "Điền vào chỗ trống:";
@@ -703,12 +712,11 @@ function splitFillBlankQuestion(question) {
 
     return {
         questionPart: formatText(questionPartRaw),
-        answerTemplate: answerTemplate.trim(),
+        answerTemplate: answerTemplate,
     };
 }
 
 /** Sinh HTML cho đoạn trả lời: thay {{n}} bằng input */
-/** ✅ DÙNG DOM API ĐỂ TRÁNH LỖI RENDER HTML */
 function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
     if (!template) return "";
 
@@ -1051,9 +1059,9 @@ function stripFillBlank(q) {
     if (type !== "FILL_BLANK") return q.question || "";
 
     const text = String(q.question || "");
-    const idx = text.lastIndexOf("Đáp án:");
-    if (idx !== -1) {
-        return text.slice(0, idx).trim();
+    const match = text.match(/Đáp\s*án\s*:/i);
+    if (match) {
+        return text.slice(0, match.index).trim();
     }
     return text;
 }
