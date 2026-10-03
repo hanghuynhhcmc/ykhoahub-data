@@ -37,6 +37,8 @@ let answeredState = {};
 let currentUser = null;
 let isGuest = false;
 
+checkAuthAndLoad();
+
 
 /* =====================================
    DỮ LIỆU ONLINE
