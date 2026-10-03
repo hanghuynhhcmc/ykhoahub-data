@@ -6,7 +6,11 @@ import { state } from './state.js';
 import { escapeHTML, formatText, normalizeAnswer, getFillBlankAnswers } from './helpers.js';
 import { markAsNotLearned, isLearned } from './questions.js';
 import { createStudyHeader, createBottomNav, attachHeaderEvents } from './study.js';
-import { showDoubleClickHint, markToastShown } from './toast.js';
+import {
+    startToastCountdown,
+    cancelToastCountdown,
+    resetToastState,
+} from './toast.js';
 
 
 /* =====================================
@@ -16,6 +20,8 @@ import { showDoubleClickHint, markToastShown } from './toast.js';
 export function renderFillBlank(q, qState) {
     const app = document.getElementById("app");
     if (!app) return;
+
+    resetToastState();
 
     const correctAnswers = getFillBlankAnswers(q.answer);
     const parts = splitFillBlankQuestion(q.question);
@@ -62,7 +68,6 @@ export function renderFillBlank(q, qState) {
     attachHeaderEvents();
     attachFillBlankInputs(q, qState);
 
-    // Double click để tự động điền đáp án đúng
     const card = app.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", () => {
@@ -74,20 +79,334 @@ export function renderFillBlank(q, qState) {
         renderFillBlankExplanation(q, qState);
         lockFillBlankInputs();
     } else {
-        // Hiện toast nếu câu này chưa từng học
-        maybeShowDoubleClickHint(q);
+        maybeStartToastCountdown(q);
     }
 }
 
 
 /* =====================================
-   HIỆN TOAST NHẮC NHỞ NẾU CHƯA HỌC
+   ĐẾM NGƯỢC HIỆN TOAST (CHỈ CÂU CHƯA HỌC)
 ===================================== */
 
-function maybeShowDoubleClickHint(q) {
+function maybeStartToastCountdown(q) {
     if (!q || q.id === null || q.id === undefined) return;
     if (isLearned(q.id)) return;
 
-    showDoubleClickHint();
-    markToastShown();
+    startToastCountdown();
+}
+
+
+/* =====================================
+   TÁCH CÂU HỎI THÀNH 2 PHẦN
+===================================== */
+
+export function splitFillBlankQuestion(question) {
+    const text = String(question ?? "");
+
+    const dapAnRegex = /Đáp\s*án\s*:/i;
+    const match = text.match(dapAnRegex);
+
+    if (!match) {
+        return {
+            questionPart: formatText(text.trim()),
+            answerTemplate: "",
+        };
+    }
+
+    const dapAnIdx = match.index;
+    const afterDapAn = dapAnIdx + match[0].length;
+
+    let questionPartRaw = text.slice(0, dapAnIdx).trim();
+    let answerTemplate = text.slice(afterDapAn).trim();
+
+    if (!questionPartRaw) {
+        questionPartRaw = "Điền vào chỗ trống:";
+    }
+
+    return {
+        questionPart: formatText(questionPartRaw),
+        answerTemplate: answerTemplate,
+    };
+}
+
+
+/* =====================================
+   BUILD HTML - PHẦN TRẢ LỜI (INPUT)
+===================================== */
+
+export function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
+    if (!template) return "";
+
+    const container = document.createElement("div");
+    const regex = /\{\{(\d+)\}\}/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(template)) !== null) {
+        const textBefore = template.slice(lastIndex, match.index);
+        if (textBefore) {
+            container.appendChild(document.createTextNode(textBefore));
+        }
+
+        const idx = parseInt(match[1], 10) - 1;
+        const val = userAnswers[idx] || "";
+
+        let inputCls = "fill-blank-inline-input";
+        let isCorrect = false;
+
+        if (checked) {
+            isCorrect = results && results[idx];
+            inputCls += isCorrect ? " correct-input" : " wrong-input";
+        }
+
+        const wrapper = document.createElement("span");
+        wrapper.className = "fill-blank-inline";
+        wrapper.dataset.index = String(idx);
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = inputCls;
+        input.dataset.index = String(idx);
+        input.value = val;
+        input.setAttribute("autocomplete", "off");
+        input.setAttribute("autocorrect", "off");
+        input.setAttribute("spellcheck", "false");
+        if (checked) input.disabled = true;
+
+        wrapper.appendChild(input);
+
+        if (checked) {
+            const status = document.createElement("span");
+            status.className = isCorrect
+                ? "fill-blank-inline-status fill-status-correct"
+                : "fill-blank-inline-status fill-status-wrong";
+            status.textContent = isCorrect ? "✓" : "✗";
+            wrapper.appendChild(status);
+        }
+
+        container.appendChild(wrapper);
+
+        lastIndex = match.index + match[0].length;
+    }
+
+    const textAfter = template.slice(lastIndex);
+    if (textAfter) {
+        container.appendChild(document.createTextNode(textAfter));
+    }
+
+    let html = container.innerHTML;
+    html = html.replace(/\n/g, "<br>");
+
+    return html;
+}
+
+
+/* =====================================
+   BUILD HTML - PHẦN ĐÁP ÁN
+===================================== */
+
+export function buildFillBlankDapAnHTML(template, correctAnswers) {
+    if (!template) return "";
+
+    const regex = /\{\{(\d+)\}\}/g;
+    let html = "";
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(template)) !== null) {
+        html += escapeHTML(template.slice(lastIndex, match.index));
+        const idx = parseInt(match[1], 10) - 1;
+        const val = correctAnswers[idx] || "";
+        html += `<span class="answer-highlight">${escapeHTML(val)}</span>`;
+        lastIndex = match.index + match[0].length;
+    }
+
+    html += escapeHTML(template.slice(lastIndex));
+    html = html.replace(/\n/g, "<br>");
+
+    return `
+        <div class="fill-dap-an">
+            <div class="explanation-title">ĐÁP ÁN</div>
+            <div>${html}</div>
+        </div>
+    `;
+}
+
+
+/* =====================================
+   GẮN SỰ KIỆN CHO INPUT
+===================================== */
+
+export function attachFillBlankInputs(q, qState) {
+    const inputs = document.querySelectorAll(".fill-blank-inline-input");
+    if (!inputs.length) return;
+
+    inputs.forEach(input => {
+        input.addEventListener("input", (e) => {
+            cancelToastCountdown();
+
+            const idx = Number(e.target.dataset.index);
+            qState.userAnswers[idx] = e.target.value;
+        });
+
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (!qState.checked && hasAnyInput(qState.userAnswers)) {
+                    cancelToastCountdown();
+                    checkFillBlankAnswer();
+                }
+            }
+        });
+
+        input.addEventListener("blur", () => {
+            if (qState.checked) return;
+
+            const allFilled = qState.userAnswers.every(
+                v => String(v || "").trim() !== ""
+            );
+
+            if (allFilled) {
+                cancelToastCountdown();
+                setTimeout(() => {
+                    if (!qState.checked) checkFillBlankAnswer();
+                }, 200);
+            }
+        });
+    });
+}
+
+
+/* =====================================
+   HELPERS
+===================================== */
+
+export function hasAnyInput(arr) {
+    if (!arr || !arr.length) return false;
+    return arr.some(v => String(v || "").trim() !== "");
+}
+
+export function lockFillBlankInputs() {
+    document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
+        inp.disabled = true;
+    });
+}
+
+
+/* =====================================
+   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG (DOUBLE CLICK)
+===================================== */
+
+export function autoRevealFillBlank() {
+    const q = state.selectedQuestions[state.currentQuestion];
+    const qState = state.answeredState[state.currentQuestion];
+    if (!q || !qState || qState.checked) return;
+
+    cancelToastCountdown();
+
+    const correctAnswers = getFillBlankAnswers(q.answer);
+
+    qState.userAnswers = correctAnswers.slice();
+
+    document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        inp.value = qState.userAnswers[idx] || "";
+    });
+
+    checkFillBlankAnswer();
+}
+
+
+/* =====================================
+   KIỂM TRA ĐÁP ÁN
+===================================== */
+
+export function checkFillBlankAnswer() {
+    const q = state.selectedQuestions[state.currentQuestion];
+    const qState = state.answeredState[state.currentQuestion];
+    if (!q || !qState || qState.checked) return;
+
+    const correctAnswers = getFillBlankAnswers(q.answer);
+    const inputs = document.querySelectorAll(".fill-blank-inline-input");
+
+    inputs.forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        qState.userAnswers[idx] = inp.value;
+    });
+
+    qState.results = correctAnswers.map((ans, i) => {
+        const user = qState.userAnswers[i] || "";
+        return normalizeAnswer(user) === normalizeAnswer(ans);
+    });
+
+    qState.checked = true;
+
+    if (qState.results.some(r => !r)) {
+        if (!qState.markedNotLearned) {
+            markAsNotLearned(q.id);
+            qState.markedNotLearned = true;
+        }
+    }
+
+    inputs.forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        inp.disabled = true;
+        inp.classList.remove("correct-input", "wrong-input");
+        inp.classList.add(qState.results[idx] ? "correct-input" : "wrong-input");
+
+        const wrapper = inp.closest(".fill-blank-inline");
+        if (wrapper) {
+            const oldStatus = wrapper.querySelector(".fill-blank-inline-status");
+            if (oldStatus) oldStatus.remove();
+
+            const status = document.createElement("span");
+            status.className = qState.results[idx]
+                ? "fill-blank-inline-status fill-status-correct"
+                : "fill-blank-inline-status fill-status-wrong";
+            status.textContent = qState.results[idx] ? "✓" : "✗";
+            wrapper.appendChild(status);
+        }
+    });
+
+    const parts = splitFillBlankQuestion(q.question);
+    const dapAnBox = document.getElementById("fillDapAn");
+    if (dapAnBox) {
+        dapAnBox.innerHTML = buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers);
+    }
+
+    renderFillBlankExplanation(q, qState);
+}
+
+
+/* =====================================
+   RENDER GIẢI THÍCH
+===================================== */
+
+export function renderFillBlankExplanation(q, qState) {
+    const expBox = document.getElementById("fillGiaiThich");
+    const noteBox = document.getElementById("autoNotLearned");
+
+    if (expBox) {
+        expBox.innerHTML = `
+            <div class="explanation-section fill-giai-thich">
+                <div class="explanation-title">GIẢI THÍCH</div>
+                <div class="feedback-explanation">
+                    ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
+                </div>
+            </div>
+        `;
+    }
+
+    if (noteBox) {
+        const hasWrong = qState.results && qState.results.some(r => !r);
+        if (hasWrong && qState.markedNotLearned) {
+            noteBox.innerHTML = `
+                <div class="auto-not-learned-note">
+                    📌 Câu này đã được thêm vào danh sách Chưa thuộc
+                </div>
+            `;
+        } else {
+            noteBox.innerHTML = "";
+        }
+    }
 }

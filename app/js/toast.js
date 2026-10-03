@@ -2,18 +2,57 @@
    TOAST - POPUP NHẮC NHỞ
 ===================================== */
 
-const TOAST_DURATION = 4000; // 4 giây
+const TOAST_DURATION = 4000;      // 4 giây hiển thị toast
+const TOAST_DELAY = 5000;         // 5 giây chờ trước khi hiện toast
 const TOAST_SHOWN_KEY = "toast_dblclick_shown";
 
+let toastTimer = null;
+
 /**
- * Hiển thị toast nhắc nhở double click
- * Chỉ hiện 1 lần duy nhất cho mỗi câu chưa học (dựa vào session)
+ * Reset timer khi chuyển câu mới
+ * KHÔNG reset cờ sessionStorage
  */
-export function showDoubleClickHint() {
-    // Mỗi session chỉ hiện 1 lần để không làm phiền
+export function resetToastState() {
+    if (toastTimer) {
+        clearTimeout(toastTimer);
+        toastTimer = null;
+    }
+    const existing = document.getElementById("dblclickHintToast");
+    if (existing) hideToast(existing, true);
+}
+
+/**
+ * Bắt đầu đếm ngược 5s để hiện toast
+ * Chỉ chạy nếu trong session này CHƯA từng hiện toast
+ */
+export function startToastCountdown() {
     if (sessionStorage.getItem(TOAST_SHOWN_KEY)) return;
 
-    // Xóa toast cũ nếu có
+    if (toastTimer) clearTimeout(toastTimer);
+
+    toastTimer = setTimeout(() => {
+        if (sessionStorage.getItem(TOAST_SHOWN_KEY)) return;
+
+        showDoubleClickHint();
+        sessionStorage.setItem(TOAST_SHOWN_KEY, "1");
+        toastTimer = null;
+    }, TOAST_DELAY);
+}
+
+/**
+ * Hủy đếm ngược (khi người dùng tương tác)
+ */
+export function cancelToastCountdown() {
+    if (toastTimer) {
+        clearTimeout(toastTimer);
+        toastTimer = null;
+    }
+}
+
+/**
+ * Hiển thị toast
+ */
+export function showDoubleClickHint() {
     const existing = document.getElementById("dblclickHintToast");
     if (existing) existing.remove();
 
@@ -33,34 +72,30 @@ export function showDoubleClickHint() {
 
     document.body.appendChild(toast);
 
-    // Animation vào
     requestAnimationFrame(() => {
         toast.classList.add("show");
     });
 
-    // Nút đóng
     const closeBtn = toast.querySelector(".dblclick-hint-close");
-    closeBtn.addEventListener("click", () => hideToast(toast));
-
-    // Tự động ẩn sau TOAST_DURATION
     const timer = setTimeout(() => hideToast(toast), TOAST_DURATION);
 
-    // Hủy timer nếu người dùng đóng sớm
-    closeBtn.addEventListener("click", () => clearTimeout(timer));
+    closeBtn.addEventListener("click", () => {
+        clearTimeout(timer);
+        hideToast(toast);
+    });
 }
 
-function hideToast(toast) {
+function hideToast(toast, immediate = false) {
     if (!toast || !toast.parentNode) return;
+
+    if (immediate) {
+        toast.parentNode.removeChild(toast);
+        return;
+    }
+
     toast.classList.remove("show");
     toast.classList.add("hide");
     setTimeout(() => {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 300);
-}
-
-/**
- * Đánh dấu đã hiện toast trong session này
- */
-export function markToastShown() {
-    sessionStorage.setItem(TOAST_SHOWN_KEY, "1");
 }
