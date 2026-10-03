@@ -5,12 +5,27 @@
 import { state } from './state.js';
 import { escapeHTML, formatText, normalizeAnswer, getFillBlankAnswers } from './helpers.js';
 import { markAsNotLearned, isLearned } from './questions.js';
-import { createStudyHeader, createBottomNav, attachHeaderEvents } from './study.js';
+import { createStudyHeader, attachHeaderEvents } from './study.js';
 import {
     startToastCountdown,
     cancelToastCountdown,
     resetToastState,
 } from './toast.js';
+
+
+/* =====================================
+   TAP ZONES STATE
+===================================== */
+
+let lastTapTime = 0;
+let tapTimer = null;
+
+function cancelTapTimer() {
+    if (tapTimer) {
+        clearTimeout(tapTimer);
+        tapTimer = null;
+    }
+}
 
 
 /* =====================================
@@ -22,6 +37,8 @@ export function renderFillBlank(q, qState) {
     if (!app) return;
 
     resetToastState();
+    lastTapTime = 0;
+    cancelTapTimer();
 
     const correctAnswers = getFillBlankAnswers(q.answer);
     const parts = splitFillBlankQuestion(q.question);
@@ -60,20 +77,14 @@ export function renderFillBlank(q, qState) {
             <div id="fillDapAn">${dapAnHTML}</div>
             <div id="fillGiaiThich"></div>
             <div id="autoNotLearned"></div>
-
-            ${createBottomNav()}
         </div>
+        <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước"></div>
+        <div class="tap-zone tap-zone-right" data-tap="next" aria-label="Câu tiếp theo"></div>
     `;
 
     attachHeaderEvents();
     attachFillBlankInputs(q, qState);
-
-    const card = app.querySelector(".interactive-card");
-    if (card) {
-        card.addEventListener("dblclick", () => {
-            autoRevealFillBlank();
-        });
-    }
+    attachTapZones();
 
     if (qState.checked) {
         renderFillBlankExplanation(q, qState);
@@ -81,6 +92,47 @@ export function renderFillBlank(q, qState) {
     } else {
         maybeStartToastCountdown(q);
     }
+}
+
+
+/* =====================================
+   TAP ZONES - NHẤP TRÁI/PHẢI MÀN HÌNH
+===================================== */
+
+function attachTapZones() {
+    const zones = document.querySelectorAll(".tap-zone");
+    zones.forEach(zone => {
+        zone.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleTap(zone.dataset.tap);
+        });
+    });
+}
+
+function handleTap(direction) {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapTime;
+    const isDoubleTap = lastTapTime > 0 && timeSinceLastTap < 320;
+
+    if (isDoubleTap) {
+        cancelTapTimer();
+        lastTapTime = 0;
+        autoRevealFillBlank();
+        return;
+    }
+
+    lastTapTime = now;
+    cancelTapTimer();
+
+    tapTimer = setTimeout(() => {
+        if (direction === "next") {
+            import('./study.js').then(({ nextQuestion }) => nextQuestion());
+        } else if (direction === "prev") {
+            import('./study.js').then(({ prevQuestion }) => prevQuestion());
+        }
+        lastTapTime = 0;
+        tapTimer = null;
+    }, 320);
 }
 
 
@@ -242,8 +294,11 @@ export function attachFillBlankInputs(q, qState) {
     if (!inputs.length) return;
 
     inputs.forEach(input => {
+        autoSizeInput(input);
+
         input.addEventListener("input", (e) => {
             cancelToastCountdown();
+            autoSizeInput(e.target);
 
             const idx = Number(e.target.dataset.index);
             qState.userAnswers[idx] = e.target.value;
@@ -278,6 +333,41 @@ export function attachFillBlankInputs(q, qState) {
 
 
 /* =====================================
+   TỰ ĐỘNG GIÃN INPUT THEO NỘI DUNG
+===================================== */
+
+export function autoSizeInput(input) {
+    if (!input) return;
+
+    if (window.CSS && CSS.supports && CSS.supports("field-sizing", "content")) {
+        return;
+    }
+
+    const span = document.createElement("span");
+    const style = window.getComputedStyle(input);
+
+    span.style.position = "absolute";
+    span.style.visibility = "hidden";
+    span.style.whiteSpace = "pre";
+    span.style.fontFamily = style.fontFamily;
+    span.style.fontSize = style.fontSize;
+    span.style.fontWeight = style.fontWeight;
+    span.style.letterSpacing = style.letterSpacing;
+    span.style.padding = "0";
+    span.style.border = "0";
+
+    span.textContent = input.value || " ";
+
+    document.body.appendChild(span);
+    const textWidth = span.offsetWidth;
+    document.body.removeChild(span);
+
+    const width = Math.min(Math.max(textWidth + 30, 80), 500);
+    input.style.width = width + "px";
+}
+
+
+/* =====================================
    HELPERS
 ===================================== */
 
@@ -294,7 +384,7 @@ export function lockFillBlankInputs() {
 
 
 /* =====================================
-   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG (DOUBLE CLICK)
+   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG (DOUBLE TAP)
 ===================================== */
 
 export function autoRevealFillBlank() {
@@ -311,6 +401,7 @@ export function autoRevealFillBlank() {
     document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
         const idx = Number(inp.dataset.index);
         inp.value = qState.userAnswers[idx] || "";
+        autoSizeInput(inp);
     });
 
     checkFillBlankAnswer();

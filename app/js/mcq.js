@@ -5,12 +5,27 @@
 import { state } from './state.js';
 import { formatText, normalizeAnswer, getChoices } from './helpers.js';
 import { markAsNotLearned, isLearned } from './questions.js';
-import { createStudyHeader, createBottomNav, attachHeaderEvents } from './study.js';
+import { createStudyHeader, attachHeaderEvents } from './study.js';
 import {
     startToastCountdown,
     cancelToastCountdown,
     resetToastState,
 } from './toast.js';
+
+
+/* =====================================
+   TAP ZONES STATE
+===================================== */
+
+let lastTapTime = 0;
+let tapTimer = null;
+
+function cancelTapTimer() {
+    if (tapTimer) {
+        clearTimeout(tapTimer);
+        tapTimer = null;
+    }
+}
 
 
 /* =====================================
@@ -22,6 +37,8 @@ export function renderMCQ(q, qState) {
     if (!app) return;
 
     resetToastState();
+    lastTapTime = 0;
+    cancelTapTimer();
 
     const choices = getChoices(q.choices);
     const correctAnswer = String(q.answer ?? "").trim();
@@ -57,30 +74,69 @@ export function renderMCQ(q, qState) {
             <div id="mcqChoices" class="answer-choices">${choicesHTML}</div>
             <div id="mcqExplanation"></div>
             <div id="autoNotLearned"></div>
-            ${createBottomNav()}
         </div>
+        <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước"></div>
+        <div class="tap-zone tap-zone-right" data-tap="next" aria-label="Câu tiếp theo"></div>
     `;
 
     attachHeaderEvents();
+    attachTapZones();
 
     app.querySelectorAll(".answer-choice").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             selectMCQAnswer(Number(btn.dataset.index));
         });
     });
-
-    const card = app.querySelector(".interactive-card");
-    if (card) {
-        card.addEventListener("dblclick", () => {
-            autoRevealMCQ();
-        });
-    }
 
     if (qState.checked) {
         renderMCQExplanation(q, qState);
     } else {
         maybeStartToastCountdown(q);
     }
+}
+
+
+/* =====================================
+   TAP ZONES - NHẤP TRÁI/PHẢI MÀN HÌNH
+===================================== */
+
+function attachTapZones() {
+    const zones = document.querySelectorAll(".tap-zone");
+    zones.forEach(zone => {
+        zone.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleTap(zone.dataset.tap);
+        });
+    });
+}
+
+function handleTap(direction) {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapTime;
+    const isDoubleTap = lastTapTime > 0 && timeSinceLastTap < 320;
+
+    // Double tap → hiện đáp án
+    if (isDoubleTap) {
+        cancelTapTimer();
+        lastTapTime = 0;
+        autoRevealMCQ();
+        return;
+    }
+
+    // Single tap → chờ 320ms xem có tap thứ 2 không
+    lastTapTime = now;
+    cancelTapTimer();
+
+    tapTimer = setTimeout(() => {
+        if (direction === "next") {
+            import('./study.js').then(({ nextQuestion }) => nextQuestion());
+        } else if (direction === "prev") {
+            import('./study.js').then(({ prevQuestion }) => prevQuestion());
+        }
+        lastTapTime = 0;
+        tapTimer = null;
+    }, 320);
 }
 
 
@@ -119,7 +175,7 @@ export function selectMCQAnswer(index) {
 
 
 /* =====================================
-   TỰ ĐỘNG CHỌN ĐÁP ÁN ĐÚNG (DOUBLE CLICK)
+   TỰ ĐỘNG CHỌN ĐÁP ÁN ĐÚNG (DOUBLE TAP)
 ===================================== */
 
 export function autoRevealMCQ() {
