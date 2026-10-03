@@ -1,33 +1,24 @@
-cd /d "C:\Users\hangh\Desktop\Y Khoa Hub\ykhoahub-data\app"
-
-copy /Y NUL index.html
-
-(
-echo ^<!DOCTYPE html^>
-echo ^<html lang="vi"^>
-echo ^<head^>
-echo ^<meta charset="UTF-8"^>
-echo ^<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"^>
-echo ^<meta name="description" content="Y KHOA HUB - On tap trac nghiem va dien khuyet"^>
-echo ^<meta name="theme-color" content="#2563eb"^>
-echo ^<title^>Y KHOA HUB^</title^>
-echo ^<link rel="icon" href="data:image/svg+xml,^<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'^>^<text y='.9em' font-size='90'^>🩺^</text^>^</svg^>"^>
-echo ^<link rel="preconnect" href="https://cdn.jsdelivr.net"^>
-echo ^<link rel="stylesheet" href="styles/main.css"^>
-echo ^<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"^>^</script^>
-echo ^</head^>
-echo ^<body^>
-echo ^<div id="app" class="app"^>
-echo     ^<div class="loading-screen"^>
-echo         ^<div class="loading-icon"^>🩺^</div^>
-echo         ^<h2^>Y KHOA HUB^</h2^>
-echo         ^<p^>Đang tải dữ liệu...^</p^>
-echo     ^</div^>
-echo ^</div^>
-echo ^<script type="module" src="app.js"^>^</script^>
-echo ^</body^>
-echo ^</html^>
-) > index.html
-
-echo === KIEM TRA ===
-type index.html
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Y KHOA HUB - Ôn tập trắc nghiệm và điền khuyết">
+<meta name="theme-color" content="#2563eb">
+<title>Y KHOA HUB</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="styles/main.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="app" class="app">
+    <div class="loading-screen">
+        <div class="loading-icon">🩺</div>
+        <h2>Y KHOA HUB</h2>
+        <p>Đang tải dữ liệu...</p>
+    </div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
