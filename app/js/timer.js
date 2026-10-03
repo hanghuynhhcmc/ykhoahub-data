@@ -2,7 +2,9 @@
    TIMER - ĐỒNG HỒ ĐẾM NGƯỢC HÌNH QUẢ BOM
 ===================================== */
 
-const WARNING_THRESHOLD = 10;
+const WARNING_THRESHOLD = 10;       // Cảnh báo đỏ khi còn ≤ 10s
+const EXPLOSION_DELAY = 300;        // Đợi 300ms sau khi nổ mới gọi callback
+const TICK_INTERVAL = 1000;         // 1 giây / tick
 
 let countdownInterval = null;
 let timeLeft = 0;
@@ -19,18 +21,20 @@ export function calculateDuration(question, type = "MCQ") {
     const length = String(question || "").length;
 
     if (type === "MCQ") {
-        // MCQ: 15s cơ bản + 1s cho mỗi 15 ký tự, tối đa 35s
-        const base = 15;
-        const perChar = 1 / 15;
+        // MCQ: 8s cơ bản + 1s cho mỗi 12 ký tự
+        // Tối thiểu 10s, tối đa 25s
+        const base = 8;
+        const perChar = 1 / 12;
         const duration = base + length * perChar;
-        return Math.round(Math.max(15, Math.min(35, duration)));
+        return Math.round(Math.max(10, Math.min(25, duration)));
     }
 
-    // FILL_BLANK: 30s cơ bản + 1s cho mỗi 10 ký tự, tối đa 60s
-    const base = 30;
-    const perChar = 1 / 10;
+    // FILL_BLANK: 15s cơ bản + 1s cho mỗi 8 ký tự
+    // Tối thiểu 20s, tối đa 40s
+    const base = 15;
+    const perChar = 1 / 8;
     const duration = base + length * perChar;
-    return Math.round(Math.max(30, Math.min(60, duration)));
+    return Math.round(Math.max(20, Math.min(40, duration)));
 }
 
 
@@ -54,13 +58,20 @@ export function startTimer(duration, onTimeUp = null) {
         updateBombDisplay();
 
         if (timeLeft <= 0) {
+            // ⚠️ LƯU CALLBACK TRƯỚC KHI stopTimer() RESET NÓ
+            const callback = onTimeUpCallback;
+
             stopTimer();
             triggerExplosion();
-            if (typeof onTimeUpCallback === 'function') {
-                onTimeUpCallback();
+
+            // Gọi callback sau khi bom nổ xong (300ms)
+            if (typeof callback === 'function') {
+                setTimeout(() => {
+                    callback();
+                }, EXPLOSION_DELAY);
             }
         }
-    }, 1000);
+    }, TICK_INTERVAL);
 }
 
 
@@ -171,4 +182,8 @@ export function isTimerRunning() {
 
 export function getTimeLeft() {
     return timeLeft;
+}
+
+export function getTotalDuration() {
+    return totalDuration;
 }
