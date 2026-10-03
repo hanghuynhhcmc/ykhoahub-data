@@ -762,23 +762,23 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
             const isCorrect = results[idx];
             inputCls += isCorrect ? " correct-input" : " wrong-input";
             statusHTML = isCorrect
-                ? `<span class="fill-blank-inline-status fill-status-correct">✓</span>`
-                : `<span class="fill-blank-inline-status fill-status-wrong">✗</span>`;
+                ? '<span class="fill-blank-inline-status fill-status-correct">✓</span>'
+                : '<span class="fill-blank-inline-status fill-status-wrong">✗</span>';
         }
 
-        html += `
-            <span class="fill-blank-inline" data-index="${idx}">
-                <input type="text"
-                    class="${inputCls}"
-                    data-index="${idx}"
-                    value="${escapeHTML(val)}"
-                    autocomplete="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    ${checked ? "disabled" : ""}>
-                ${statusHTML}
-            </span>
-        `;
+        // QUAN TRỌNG: viết liền không xuống dòng, không khoảng trắng thừa
+        html += '<span class="fill-blank-inline" data-index="' + idx + '">'
+              + '<input type="text"'
+              + ' class="' + inputCls + '"'
+              + ' data-index="' + idx + '"'
+              + ' value="' + escapeHTML(val) + '"'
+              + ' autocomplete="off"'
+              + ' autocorrect="off"'
+              + ' spellcheck="false"'
+              + (checked ? ' disabled' : '')
+              + '>'
+              + statusHTML
+              + '</span>';
 
         lastIndex = match.index + match[0].length;
     }

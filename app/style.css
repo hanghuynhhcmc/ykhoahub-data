@@ -453,6 +453,9 @@ button:disabled { cursor: default; }
     padding: 16px;
     overflow-wrap: anywhere;
     word-break: break-word;
+    /* Thêm 2 dòng này để không bị đẩy xuống dòng */
+    white-space: normal;
+    line-height: 2.1;
 }
 
 .fill-blank-inline {
@@ -461,6 +464,9 @@ button:disabled { cursor: default; }
     margin: 0 2px;
     vertical-align: middle;
     align-items: center;
+    /* Thêm 2 dòng này để không bị đẩy xuống dòng */
+    white-space: nowrap;
+    line-height: 1;
 }
 
 .fill-blank-inline-input {
