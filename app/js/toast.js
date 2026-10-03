@@ -2,94 +2,46 @@
    TOAST - POPUP NHẮC NHỞ
 ===================================== */
 
-const TOAST_DURATION = 4000;
-const TOAST_DELAY = 5000;
-const TOAST_SHOWN_KEY = "toast_dblclick_shown";
 const TAP_HINT_KEY = "tap_hint_shown";
-
-let toastTimer = null;
+const TAP_HINT_DURATION = 300;
 
 
 /* =====================================
-   TOAST DOUBLE CLICK CŨ (giữ lại, có thể tắt)
+   RESET TOAST STATE
+   (Gọi khi render câu hỏi mới để dọn toast cũ nếu có)
 ===================================== */
 
 export function resetToastState() {
-    if (toastTimer) {
-        clearTimeout(toastTimer);
-        toastTimer = null;
-    }
-    const existing = document.getElementById("dblclickHintToast");
-    if (existing) hideToast(existing, true);
+    // Hiện tại không dùng toast cũ → không cần làm gì
+    // Nhưng giữ function để tương thích với mcq.js / fill-blank.js
+    return;
 }
 
+
+/* =====================================
+   TOAST COUNTDOWN (KHÔNG DÙNG NỮA)
+   Giữ để tương thích import trong mcq.js / fill-blank.js
+===================================== */
+
 export function startToastCountdown() {
-    // Đã thay thế bằng popup khi mở app → không hiện toast cũ nữa
     return;
 }
 
 export function cancelToastCountdown() {
-    if (toastTimer) {
-        clearTimeout(toastTimer);
-        toastTimer = null;
-    }
-}
-
-export function showDoubleClickHint() {
-    const existing = document.getElementById("dblclickHintToast");
-    if (existing) existing.remove();
-
-    const toast = document.createElement("div");
-    toast.id = "dblclickHintToast";
-    toast.className = "dblclick-hint-toast";
-    toast.innerHTML = `
-        <div class="dblclick-hint-icon">💡</div>
-        <div class="dblclick-hint-content">
-            <div class="dblclick-hint-title">Câu này bạn chưa học</div>
-            <div class="dblclick-hint-text">
-                Nhấp <b>2 lần</b> vào màn hình để hiện đáp án ngay
-            </div>
-        </div>
-        <button type="button" class="dblclick-hint-close" aria-label="Đóng">✕</button>
-    `;
-
-    document.body.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        toast.classList.add("show");
-    });
-
-    const closeBtn = toast.querySelector(".dblclick-hint-close");
-    const timer = setTimeout(() => hideToast(toast), TOAST_DURATION);
-
-    closeBtn.addEventListener("click", () => {
-        clearTimeout(timer);
-        hideToast(toast);
-    });
-}
-
-function hideToast(toast, immediate = false) {
-    if (!toast || !toast.parentNode) return;
-
-    if (immediate) {
-        toast.parentNode.removeChild(toast);
-        return;
-    }
-
-    toast.classList.remove("show");
-    toast.classList.add("hide");
-    setTimeout(() => {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 300);
+    return;
 }
 
 
 /* =====================================
-   TAP HINT - NHẮC NHỞ KHI MỞ APP (1 LẦN)
+   TAP HINT - NHẮC NHỞ KHI MỞ APP (1 LẦN DUY NHẤT)
 ===================================== */
 
 export function showTapHintOnce() {
+    // Đã hiện 1 lần rồi → không hiện nữa
     if (localStorage.getItem(TAP_HINT_KEY)) return;
+
+    // Tránh hiện trùng nếu hàm bị gọi 2 lần
+    if (document.getElementById("tapHintOverlay")) return;
 
     const hint = document.createElement("div");
     hint.id = "tapHintOverlay";
@@ -109,7 +61,7 @@ export function showTapHintOnce() {
                 </div>
                 <div class="tap-hint-item">
                     <span class="tap-hint-symbol">👆👆</span>
-                    <span>Nhấp <b>2 lần</b> liên tiếp: <b>Hiện đáp án ngay</b></span>
+                    <span>Nhấp <b>2 lần</b> vào ô câu hỏi: <b>Hiện đáp án ngay</b></span>
                 </div>
             </div>
             <button type="button" class="tap-hint-btn" id="tapHintClose">
@@ -120,15 +72,26 @@ export function showTapHintOnce() {
 
     document.body.appendChild(hint);
 
+    // Trigger animation
     requestAnimationFrame(() => {
         hint.classList.add("show");
     });
 
     const closeBtn = hint.querySelector("#tapHintClose");
-    closeBtn.addEventListener("click", () => {
+
+    const close = () => {
         hint.classList.remove("show");
         hint.classList.add("hide");
         localStorage.setItem(TAP_HINT_KEY, "1");
-        setTimeout(() => hint.remove(), 300);
+        setTimeout(() => {
+            if (hint.parentNode) hint.parentNode.removeChild(hint);
+        }, TAP_HINT_DURATION);
+    };
+
+    closeBtn.addEventListener("click", close);
+
+    // Đóng khi click ra ngoài card
+    hint.addEventListener("click", (e) => {
+        if (e.target === hint) close();
     });
 }

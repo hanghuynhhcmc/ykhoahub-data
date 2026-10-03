@@ -73,6 +73,18 @@
         0 8px 20px -8px rgba(15, 23, 42, 0.06);
 }
 
+/* Ngăn bôi đen text khi double click trong card */
+.interactive-card {
+    user-select: none;
+    touch-action: manipulation;
+}
+
+/* Cho phép chọn text trong input fill-blank */
+.interactive-card input {
+    user-select: text;
+    cursor: text;
+}
+
 .card-label {
     margin-bottom: 12px;
     font-size: 11px;
@@ -166,7 +178,7 @@
 
 
 /* =====================================
-   BOTTOM NAV
+   BOTTOM NAV (giữ lại — phòng khi cần dùng)
 ===================================== */
 .bottom-nav-wrapper {
     width: 100%;
@@ -225,97 +237,6 @@
 
 
 /* =====================================
-   DOUBLE CLICK HINT TOAST (cũ — có thể giữ hoặc xóa)
-===================================== */
-.dblclick-hint-toast {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-120%);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    max-width: 420px;
-    width: calc(100% - 32px);
-    padding: 14px 16px;
-    background: linear-gradient(135deg, #fffbeb, #fef3c7);
-    border: 1.5px solid #fcd34d;
-    border-radius: 14px;
-    box-shadow:
-        0 4px 12px rgba(120, 53, 15, 0.12),
-        0 12px 32px -8px rgba(120, 53, 15, 0.18);
-    opacity: 0;
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-                opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.dblclick-hint-toast.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.dblclick-hint-toast.hide {
-    transform: translateX(-50%) translateY(-120%);
-    opacity: 0;
-}
-
-.dblclick-hint-icon {
-    flex: 0 0 auto;
-    font-size: 22px;
-    line-height: 1;
-}
-
-.dblclick-hint-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.dblclick-hint-title {
-    font-size: 13px;
-    font-weight: 800;
-    color: #92400e;
-    margin-bottom: 2px;
-    letter-spacing: 0.01em;
-}
-
-.dblclick-hint-text {
-    font-size: 12.5px;
-    color: #78350f;
-    line-height: 1.45;
-}
-
-.dblclick-hint-text b {
-    color: #92400e;
-    font-weight: 800;
-}
-
-.dblclick-hint-close {
-    flex: 0 0 auto;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    background: rgba(146, 64, 14, 0.08);
-    color: #92400e;
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s ease;
-}
-
-.dblclick-hint-close:hover {
-    background: rgba(146, 64, 14, 0.18);
-}
-
-
-/* =====================================
    TAP ZONES - NHẤP TRÁI/PHẢI MÀN HÌNH
 ===================================== */
 .tap-zone {
@@ -350,7 +271,7 @@ body:has(.fill-blank-inline-input:focus) .tap-zone {
     pointer-events: none;
 }
 
-/* Đảm bảo card nội dung nằm trên tap zone */
+/* Đảm bảo card nội dung nằm trên tap zone để double click hoạt động */
 .interactive-card,
 .study-header,
 .bottom-nav-wrapper {
@@ -512,18 +433,6 @@ body:has(.fill-blank-inline-input:focus) .tap-zone {
         padding: 8px 12px;
         gap: 6px;
     }
-
-    /* Toast mobile */
-    .dblclick-hint-toast {
-        top: 12px;
-        padding: 12px 14px;
-        gap: 10px;
-        border-radius: 12px;
-    }
-
-    .dblclick-hint-icon { font-size: 20px; }
-    .dblclick-hint-title { font-size: 12.5px; }
-    .dblclick-hint-text { font-size: 12px; }
 
     /* Tap zones */
     .tap-zone { width: 22%; max-width: none; }

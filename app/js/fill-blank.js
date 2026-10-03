@@ -14,21 +14,6 @@ import {
 
 
 /* =====================================
-   TAP ZONES STATE
-===================================== */
-
-let lastTapTime = 0;
-let tapTimer = null;
-
-function cancelTapTimer() {
-    if (tapTimer) {
-        clearTimeout(tapTimer);
-        tapTimer = null;
-    }
-}
-
-
-/* =====================================
    RENDER MÀN HÌNH FILL BLANK
 ===================================== */
 
@@ -37,8 +22,6 @@ export function renderFillBlank(q, qState) {
     if (!app) return;
 
     resetToastState();
-    lastTapTime = 0;
-    cancelTapTimer();
 
     const correctAnswers = getFillBlankAnswers(q.answer);
     const parts = splitFillBlankQuestion(q.question);
@@ -96,43 +79,33 @@ export function renderFillBlank(q, qState) {
 
 
 /* =====================================
-   TAP ZONES - NHẤP TRÁI/PHẢI MÀN HÌNH
+   TAP ZONES + DOUBLE CLICK TRONG Ô
 ===================================== */
 
 function attachTapZones() {
-    const zones = document.querySelectorAll(".tap-zone");
-    zones.forEach(zone => {
+    // 1. Tap zone 2 mép → single click → next/prev (KHÔNG delay)
+    document.querySelectorAll(".tap-zone").forEach(zone => {
         zone.addEventListener("click", (e) => {
             e.stopPropagation();
-            handleTap(zone.dataset.tap);
+            const direction = zone.dataset.tap;
+            if (direction === "next") {
+                import('./study.js').then(({ nextQuestion }) => nextQuestion());
+            } else if (direction === "prev") {
+                import('./study.js').then(({ prevQuestion }) => prevQuestion());
+            }
         });
     });
-}
 
-function handleTap(direction) {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapTime;
-    const isDoubleTap = lastTapTime > 0 && timeSinceLastTap < 320;
-
-    if (isDoubleTap) {
-        cancelTapTimer();
-        lastTapTime = 0;
-        autoRevealFillBlank();
-        return;
+    // 2. Double click trong ô nội dung → hiện đáp án
+    const card = document.querySelector(".interactive-card");
+    if (card) {
+        card.addEventListener("dblclick", (e) => {
+            // Bỏ qua nếu double click vào input (để user chọn text)
+            if (e.target.tagName === "INPUT") return;
+            e.stopPropagation();
+            autoRevealFillBlank();
+        });
     }
-
-    lastTapTime = now;
-    cancelTapTimer();
-
-    tapTimer = setTimeout(() => {
-        if (direction === "next") {
-            import('./study.js').then(({ nextQuestion }) => nextQuestion());
-        } else if (direction === "prev") {
-            import('./study.js').then(({ prevQuestion }) => prevQuestion());
-        }
-        lastTapTime = 0;
-        tapTimer = null;
-    }, 320);
 }
 
 
@@ -384,7 +357,7 @@ export function lockFillBlankInputs() {
 
 
 /* =====================================
-   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG (DOUBLE TAP)
+   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG (DOUBLE CLICK)
 ===================================== */
 
 export function autoRevealFillBlank() {
