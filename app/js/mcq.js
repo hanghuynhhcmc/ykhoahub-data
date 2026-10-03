@@ -1,64 +1,67 @@
 /* =====================================
-   FILL_BLANK - ĐIỀN KHUYẾT
+   MCQ - TRẮC NGHIỆM
 ===================================== */
 
 import { state } from './state.js';
-import { escapeHTML, formatText, normalizeAnswer, getFillBlankAnswers } from './helpers.js';
+import { formatText, normalizeAnswer, getChoices } from './helpers.js';
 import { markAsNotLearned } from './questions.js';
 import { createStudyHeader, createBottomNav, attachHeaderEvents } from './study.js';
 
 
-export function renderFillBlank(q, qState) {
+/* =====================================
+   RENDER MÀN HÌNH MCQ
+===================================== */
+
+export function renderMCQ(q, qState) {
     const app = document.getElementById("app");
     if (!app) return;
 
-    const correctAnswers = getFillBlankAnswers(q.answer);
-    const parts = splitFillBlankQuestion(q.question);
+    const choices = getChoices(q.choices);
+    const correctAnswer = String(q.answer ?? "").trim();
 
-    if (!qState.userAnswers || qState.userAnswers.length !== correctAnswers.length) {
-        qState.userAnswers = new Array(correctAnswers.length).fill("");
-    }
+    let choicesHTML = "";
+    choices.forEach((choice, index) => {
+        let cls = "answer-choice";
+        if (qState.checked) {
+            const isCorrectChoice = normalizeAnswer(choice) === normalizeAnswer(correctAnswer);
+            const isSelected = qState.selectedIndex === index;
 
-    const answerHTML = buildFillBlankAnswerHTML(
-        parts.answerTemplate,
-        qState.userAnswers,
-        qState.checked,
-        qState.results
-    );
+            if (isCorrectChoice) cls += " correct";
+            else if (isSelected) cls += " wrong";
+        } else {
+            if (qState.selectedIndex === index) cls += " selected";
+        }
 
-    const dapAnHTML = qState.checked
-        ? buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers)
-        : "";
+        choicesHTML += `
+            <button type="button"
+                class="${cls}"
+                data-index="${index}"
+                ${qState.checked ? "disabled" : ""}>
+                <span class="choice-tick"></span>
+                <span class="choice-text">${formatText(choice)}</span>
+            </button>
+        `;
+    });
 
-    const checkDisabled = qState.checked || !hasAnyInput(qState.userAnswers);
+    const checkDisabled = qState.checked || qState.selectedIndex === null;
 
     app.innerHTML = `
         ${createStudyHeader(q)}
         <div class="interactive-card">
+            <div class="mcq-question-text">${formatText(q.question)}</div>
 
-            <div class="fill-blank-cau-hoi">
-                <div class="card-label">CÂU HỎI</div>
-                <div class="fill-blank-cau-hoi-text">${parts.questionPart}</div>
-            </div>
+            <div id="mcqChoices" class="answer-choices">${choicesHTML}</div>
 
-            <div class="fill-blank-tra-loi">
-                <div class="card-label">TRẢ LỜI</div>
-                <div class="fill-blank-tra-loi-text" id="fillBlankAnswerArea">
-                    ${answerHTML}
-                </div>
-            </div>
-
-            <div class="fill-blank-actions">
+            <div class="mcq-actions">
                 <button type="button"
                     class="check-answer-button"
-                    id="fillCheckButton"
+                    id="mcqCheckButton"
                     ${checkDisabled ? "disabled" : ""}>
                     KIỂM TRA
                 </button>
             </div>
 
-            <div id="fillDapAn">${dapAnHTML}</div>
-            <div id="fillGiaiThich"></div>
+            <div id="mcqExplanation"></div>
             <div id="autoNotLearned"></div>
 
             ${createBottomNav()}
@@ -66,263 +69,102 @@ export function renderFillBlank(q, qState) {
     `;
 
     attachHeaderEvents();
-    attachFillBlankInputs(q, qState);
 
-    const checkBtn = document.getElementById("fillCheckButton");
-    if (checkBtn) checkBtn.addEventListener("click", checkFillBlankAnswer);
+    app.querySelectorAll(".answer-choice").forEach(btn => {
+        btn.addEventListener("click", () => {
+            selectMCQAnswer(Number(btn.dataset.index));
+        });
+    });
+
+    const checkBtn = document.getElementById("mcqCheckButton");
+    if (checkBtn) checkBtn.addEventListener("click", checkMCQAnswer);
 
     if (qState.checked) {
-        renderFillBlankExplanation(q, qState);
-        lockFillBlankInputs();
+        renderMCQExplanation(q, qState);
     }
 }
 
 
-export function splitFillBlankQuestion(question) {
-    const text = String(question ?? "");
+/* =====================================
+   CHỌN ĐÁP ÁN
+===================================== */
 
-    const dapAnRegex = /Đáp\s*án\s*:/i;
-    const match = text.match(dapAnRegex);
+export function selectMCQAnswer(index) {
+    const qState = state.answeredState[state.currentQuestion];
+    if (!qState || qState.checked) return;
 
-    if (!match) {
-        return {
-            questionPart: formatText(text.trim()),
-            answerTemplate: "",
-        };
-    }
+    qState.selectedIndex = index;
 
-    const dapAnIdx = match.index;
-    const afterDapAn = dapAnIdx + match[0].length;
-
-    let questionPartRaw = text.slice(0, dapAnIdx).trim();
-    let answerTemplate = text.slice(afterDapAn).trim();
-
-    if (!questionPartRaw) {
-        questionPartRaw = "Điền vào chỗ trống:";
-    }
-
-    return {
-        questionPart: formatText(questionPartRaw),
-        answerTemplate: answerTemplate,
-    };
-}
-
-
-export function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
-    if (!template) return "";
-
-    const container = document.createElement("div");
-    const regex = /\{\{(\d+)\}\}/g;
-    let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(template)) !== null) {
-        const textBefore = template.slice(lastIndex, match.index);
-        if (textBefore) {
-            container.appendChild(document.createTextNode(textBefore));
-        }
-
-        const idx = parseInt(match[1], 10) - 1;
-        const val = userAnswers[idx] || "";
-
-        let inputCls = "fill-blank-inline-input";
-        let isCorrect = false;
-
-        if (checked) {
-            isCorrect = results && results[idx];
-            inputCls += isCorrect ? " correct-input" : " wrong-input";
-        }
-
-        const wrapper = document.createElement("span");
-        wrapper.className = "fill-blank-inline";
-        wrapper.dataset.index = String(idx);
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = inputCls;
-        input.dataset.index = String(idx);
-        input.value = val;
-        input.setAttribute("autocomplete", "off");
-        input.setAttribute("autocorrect", "off");
-        input.setAttribute("spellcheck", "false");
-        if (checked) input.disabled = true;
-
-        wrapper.appendChild(input);
-
-        if (checked) {
-            const status = document.createElement("span");
-            status.className = isCorrect
-                ? "fill-blank-inline-status fill-status-correct"
-                : "fill-blank-inline-status fill-status-wrong";
-            status.textContent = isCorrect ? "✓" : "✗";
-            wrapper.appendChild(status);
-        }
-
-        container.appendChild(wrapper);
-
-        lastIndex = match.index + match[0].length;
-    }
-
-    const textAfter = template.slice(lastIndex);
-    if (textAfter) {
-        container.appendChild(document.createTextNode(textAfter));
-    }
-
-    let html = container.innerHTML;
-    html = html.replace(/\n/g, "<br>");
-
-    return html;
-}
-
-
-export function buildFillBlankDapAnHTML(template, correctAnswers) {
-    if (!template) return "";
-
-    const regex = /\{\{(\d+)\}\}/g;
-    let html = "";
-    let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(template)) !== null) {
-        html += escapeHTML(template.slice(lastIndex, match.index));
-        const idx = parseInt(match[1], 10) - 1;
-        const val = correctAnswers[idx] || "";
-        html += `<span class="answer-highlight">${escapeHTML(val)}</span>`;
-        lastIndex = match.index + match[0].length;
-    }
-
-    html += escapeHTML(template.slice(lastIndex));
-    html = html.replace(/\n/g, "<br>");
-
-    return `
-        <div class="fill-dap-an">
-            <div class="explanation-title">ĐÁP ÁN</div>
-            <div>${html}</div>
-        </div>
-    `;
-}
-
-
-export function attachFillBlankInputs(q, qState) {
-    const inputs = document.querySelectorAll(".fill-blank-inline-input");
-    if (!inputs.length) return;
-
-    inputs.forEach(input => {
-        input.addEventListener("input", (e) => {
-            const idx = Number(e.target.dataset.index);
-            qState.userAnswers[idx] = e.target.value;
-
-            const checkBtn = document.getElementById("fillCheckButton");
-            if (checkBtn) {
-                checkBtn.disabled = qState.checked || !hasAnyInput(qState.userAnswers);
-            }
-        });
-
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                if (!qState.checked && hasAnyInput(qState.userAnswers)) {
-                    checkFillBlankAnswer();
-                }
-            }
-        });
+    document.querySelectorAll(".answer-choice").forEach((btn, i) => {
+        btn.classList.toggle("selected", i === index);
     });
+
+    const checkBtn = document.getElementById("mcqCheckButton");
+    if (checkBtn) checkBtn.disabled = false;
 }
 
 
-export function hasAnyInput(arr) {
-    if (!arr || !arr.length) return false;
-    return arr.some(v => String(v || "").trim() !== "");
-}
+/* =====================================
+   KIỂM TRA ĐÁP ÁN
+===================================== */
 
-
-export function lockFillBlankInputs() {
-    document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
-        inp.disabled = true;
-    });
-    const btn = document.getElementById("fillCheckButton");
-    if (btn) btn.disabled = true;
-}
-
-
-export function checkFillBlankAnswer() {
+export function checkMCQAnswer() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState || qState.checked) return;
 
-    const correctAnswers = getFillBlankAnswers(q.answer);
-    const inputs = document.querySelectorAll(".fill-blank-inline-input");
+    const choices = getChoices(q.choices);
+    const correctAnswer = String(q.answer ?? "").trim();
+    const selectedAnswer = choices[qState.selectedIndex];
 
-    inputs.forEach(inp => {
-        const idx = Number(inp.dataset.index);
-        qState.userAnswers[idx] = inp.value;
-    });
-
-    qState.results = correctAnswers.map((ans, i) => {
-        const user = qState.userAnswers[i] || "";
-        return normalizeAnswer(user) === normalizeAnswer(ans);
-    });
-
+    const isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(correctAnswer);
+    qState.isCorrect = isCorrect;
     qState.checked = true;
 
-    if (qState.results.some(r => !r)) {
-        if (!qState.markedNotLearned) {
-            markAsNotLearned(q.id);
-            qState.markedNotLearned = true;
-        }
-    }
+    document.querySelectorAll(".answer-choice").forEach((btn, i) => {
+        btn.disabled = true;
+        btn.classList.remove("selected");
 
-    inputs.forEach(inp => {
-        const idx = Number(inp.dataset.index);
-        inp.disabled = true;
-        inp.classList.remove("correct-input", "wrong-input");
-        inp.classList.add(qState.results[idx] ? "correct-input" : "wrong-input");
-
-        const wrapper = inp.closest(".fill-blank-inline");
-        if (wrapper) {
-            const oldStatus = wrapper.querySelector(".fill-blank-inline-status");
-            if (oldStatus) oldStatus.remove();
-
-            const status = document.createElement("span");
-            status.className = qState.results[idx]
-                ? "fill-blank-inline-status fill-status-correct"
-                : "fill-blank-inline-status fill-status-wrong";
-            status.textContent = qState.results[idx] ? "✓" : "✗";
-            wrapper.appendChild(status);
+        const choice = choices[i];
+        if (normalizeAnswer(choice) === normalizeAnswer(correctAnswer)) {
+            btn.classList.add("correct");
+        } else if (i === qState.selectedIndex) {
+            btn.classList.add("wrong");
         }
     });
 
-    const checkBtn = document.getElementById("fillCheckButton");
+    const checkBtn = document.getElementById("mcqCheckButton");
     if (checkBtn) checkBtn.disabled = true;
 
-    const parts = splitFillBlankQuestion(q.question);
-    const dapAnBox = document.getElementById("fillDapAn");
-    if (dapAnBox) {
-        dapAnBox.innerHTML = buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers);
+    if (!isCorrect && !qState.markedNotLearned) {
+        markAsNotLearned(q.id);
+        qState.markedNotLearned = true;
     }
 
-    renderFillBlankExplanation(q, qState);
+    renderMCQExplanation(q, qState);
 }
 
 
-export function renderFillBlankExplanation(q, qState) {
-    const expBox = document.getElementById("fillGiaiThich");
-    const noteBox = document.getElementById("autoNotLearned");
+/* =====================================
+   RENDER GIẢI THÍCH
+===================================== */
 
-    if (expBox) {
-        expBox.innerHTML = `
-            <div class="explanation-section fill-giai-thich">
-                <div class="explanation-title">GIẢI THÍCH</div>
-                <div class="feedback-explanation">
-                    ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
-                </div>
+export function renderMCQExplanation(q, qState) {
+    const expBox = document.getElementById("mcqExplanation");
+    const noteBox = document.getElementById("autoNotLearned");
+    if (!expBox) return;
+
+    expBox.innerHTML = `
+        <div class="explanation-section">
+            <div class="explanation-title">GIẢI THÍCH</div>
+            <div class="feedback-explanation">
+                ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
             </div>
-        `;
-    }
+        </div>
+    `;
 
     if (noteBox) {
-        const hasWrong = qState.results && qState.results.some(r => !r);
-        if (hasWrong && qState.markedNotLearned) {
+        if (!qState.isCorrect && qState.markedNotLearned) {
             noteBox.innerHTML = `
                 <div class="auto-not-learned-note">
                     📌 Câu này đã được thêm vào danh sách Chưa thuộc

@@ -259,7 +259,6 @@ export function hasAnyInput(arr) {
     return arr.some(v => String(v || "").trim() !== "");
 }
 
-
 export function lockFillBlankInputs() {
     document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
         inp.disabled = true;
