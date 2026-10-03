@@ -1,3 +1,11 @@
+/* =====================================
+   Y KHOA HUB - APP.JS
+   Chỉ hỗ trợ 2 loại câu hỏi:
+   - MCQ        (dang = "MCQ")
+   - FILL_BLANK (dang = "FILL_BLANK")
+   Flashcard đã bị loại bỏ hoàn toàn.
+===================================== */
+
 let questions = [];
 let selectedQuestions = [];
 let currentQuestion = 0;
@@ -8,2941 +16,1227 @@ let searchResults = [];
 let searchKeyword = "";
 let returnToSearch = false;
 
-// Đếm số lần trả lời sai cho câu fill-blank hiện tại
-let fillBlankWrongCount = 0;
+/* Lưu trạng thái từng câu trong selectedQuestions
+   answeredState[index] = {
+     type: "MCQ" | "FILL_BLANK",
+     checked: bool,
+     // MCQ
+     selectedIndex: number|null,
+     isCorrect: bool,
+     // FILL_BLANK
+     userAnswers: [string],
+     results: [bool],
+     // Chung
+     markedNotLearned: bool
+   }
+*/
+let answeredState = {};
 
-// Lưu timer để xóa dấu ✗ trên MCQ
-let mcqWrongTimer = null;
 
-
-// =====================================
-// DỮ LIỆU ONLINE
-// =====================================
+/* =====================================
+   DỮ LIỆU ONLINE
+===================================== */
 
 const ONLINE_DATA_URL =
     "https://raw.githubusercontent.com/hanghuynhhcmc/ykhoahub-data/refs/heads/main/questions.json";
 
-const LOCAL_CACHE_KEY =
-    "ykhoahub_questions_cache";
-
-const LEARNED_KEY =
-    "ykhoahub_learned";
-
-const DASHBOARD_KEY =
-    "ykhoahub_dashboard_subjects";
+const LOCAL_CACHE_KEY = "ykhoahub_questions_cache";
+const LEARNED_KEY = "ykhoahub_learned";
+const DASHBOARD_KEY = "ykhoahub_dashboard_subjects";
 
 
-// =====================================
-// TẢI DỮ LIỆU
-// =====================================
+/* =====================================
+   TẢI DỮ LIỆU
+===================================== */
 
 async function loadQuestions() {
-
     try {
+        const response = await fetch(ONLINE_DATA_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error("Không tải được dữ liệu online");
+        const onlineData = await response.json();
+        if (!Array.isArray(onlineData)) throw new Error("Dữ liệu online không hợp lệ");
 
-        const response =
-            await fetch(
-                ONLINE_DATA_URL,
-                {
-                    cache: "no-store"
-                }
-            );
-
-        if (!response.ok) {
-            throw new Error(
-                "Không tải được dữ liệu online"
-            );
-        }
-
-        const onlineData =
-            await response.json();
-
-        if (!Array.isArray(onlineData)) {
-            throw new Error(
-                "Dữ liệu online không hợp lệ"
-            );
-        }
-
-        questions =
-            onlineData;
-
-        localStorage.setItem(
-            LOCAL_CACHE_KEY,
-            JSON.stringify(onlineData)
-        );
-
+        questions = onlineData;
+        localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(onlineData));
         showMenu();
-
         return;
-
     } catch (error) {
-
-        console.log(
-            "Không tải được dữ liệu online:",
-            error
-        );
-
+        console.log("Không tải được dữ liệu online:", error);
     }
 
-
-    // =================================
-    // ĐỌC CACHE
-    // =================================
-
+    // Đọc cache
     try {
-
-        const savedData =
-            localStorage.getItem(
-                LOCAL_CACHE_KEY
-            );
-
+        const savedData = localStorage.getItem(LOCAL_CACHE_KEY);
         if (savedData) {
-
-            const cachedQuestions =
-                JSON.parse(savedData);
-
-            if (
-                Array.isArray(
-                    cachedQuestions
-                )
-            ) {
-
-                questions =
-                    cachedQuestions;
-
+            const cached = JSON.parse(savedData);
+            if (Array.isArray(cached)) {
+                questions = cached;
                 showMenu();
-
                 return;
-
             }
-
         }
-
     } catch (error) {
-
-        console.log(
-            "Không đọc được cache:",
-            error
-        );
-
+        console.log("Không đọc được cache:", error);
     }
 
-
-    // =================================
-    // ĐỌC QUESTIONS.JSON LOCAL
-    // =================================
-
+    // Đọc questions.json local
     try {
+        const response = await fetch("questions.json");
+        if (!response.ok) throw new Error("Không tìm thấy questions.json");
+        const localData = await response.json();
+        if (!Array.isArray(localData)) throw new Error("questions.json không hợp lệ");
 
-        const response =
-            await fetch(
-                "questions.json"
-            );
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Không tìm thấy questions.json"
-            );
-
-        }
-
-        const localData =
-            await response.json();
-
-        if (!Array.isArray(localData)) {
-
-            throw new Error(
-                "questions.json không hợp lệ"
-            );
-
-        }
-
-        questions =
-            localData;
-
-        localStorage.setItem(
-            LOCAL_CACHE_KEY,
-            JSON.stringify(localData)
-        );
-
+        questions = localData;
+        localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(localData));
         showMenu();
-
     } catch (error) {
-
-        console.error(
-            "Lỗi tải dữ liệu:",
-            error
-        );
-
-        const app =
-            document.getElementById(
-                "app"
-            );
-
+        console.error("Lỗi tải dữ liệu:", error);
+        const app = document.getElementById("app");
         if (app) {
-
             app.innerHTML = `
-
                 <div class="card">
-
-                    <h2>
-                        Lỗi tải dữ liệu
-                    </h2>
-
-                    <p>
-                        Không thể tải dữ liệu câu hỏi.
-                    </p>
-
-                    <p>
-                        ${escapeHTML(
-                            error.message
-                        )}
-                    </p>
-
+                    <h2>Lỗi tải dữ liệu</h2>
+                    <p>Không thể tải dữ liệu câu hỏi.</p>
+                    <p>${escapeHTML(error.message)}</p>
                 </div>
-
             `;
-
         }
-
     }
-
 }
-
-
-// =====================================
-// KHỞI ĐỘNG
-// =====================================
 
 loadQuestions();
 
 
-// =====================================
-// DANH SÁCH MÔN
-// =====================================
+/* =====================================
+   DANH SÁCH MÔN
+===================================== */
 
 function getSubjects() {
-
     return [
         ...new Set(
             questions
-                .map(
-                    q => q.mon
-                )
-                .filter(
-                    q =>
-                        q !== null &&
-                        q !== undefined &&
-                        String(q).trim() !== ""
-                )
+                .map(q => q.mon)
+                .filter(q => q !== null && q !== undefined && String(q).trim() !== "")
         )
     ];
-
 }
 
 
-// =====================================
-// DASHBOARD MÔN
-// =====================================
+/* =====================================
+   DASHBOARD
+===================================== */
 
 function getDashboardSubjects() {
-
-    const subjects =
-        getSubjects();
-
+    const subjects = getSubjects();
     let saved = [];
 
     try {
+        saved = JSON.parse(localStorage.getItem(DASHBOARD_KEY)) || [];
+    } catch { saved = []; }
 
-        saved =
-            JSON.parse(
-                localStorage.getItem(
-                    DASHBOARD_KEY
-                )
-            ) || [];
-
-    } catch {
-
-        saved = [];
-
-    }
-
-
-    saved =
-        saved.filter(
-            subject =>
-                subjects.includes(
-                    subject
-                )
-        );
-
+    saved = saved.filter(s => subjects.includes(s));
 
     if (saved.length === 0) {
-
-        saved =
-            subjects.slice(0, 4);
-
-        saveDashboardSubjects(
-            saved
-        );
-
+        saved = subjects.slice(0, 4);
+        saveDashboardSubjects(saved);
     }
-
 
     return saved.slice(0, 4);
-
 }
 
-
-// =====================================
-// LƯU DASHBOARD
-// =====================================
-
-function saveDashboardSubjects(
-    subjects
-) {
-
-    localStorage.setItem(
-        DASHBOARD_KEY,
-        JSON.stringify(
-            subjects.slice(0, 4)
-        )
-    );
-
+function saveDashboardSubjects(subjects) {
+    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(subjects.slice(0, 4)));
 }
 
-
-// =====================================
-// XÓA MÔN KHỎI DASHBOARD
-// =====================================
-
-function removeDashboardSubject(
-    subject,
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-    let dashboard =
-        getDashboardSubjects();
-
-    dashboard =
-        dashboard.filter(
-            item =>
-                item !== subject
-        );
-
-    saveDashboardSubjects(
-        dashboard
-    );
-
+function removeDashboardSubject(subject, event) {
+    if (event) event.stopPropagation();
+    let dashboard = getDashboardSubjects();
+    dashboard = dashboard.filter(item => item !== subject);
+    saveDashboardSubjects(dashboard);
     showMenu();
-
 }
 
-
-// =====================================
-// THÊM MÔN VÀO DASHBOARD
-// =====================================
-
-function addDashboardSubject(
-    subject
-) {
-
-    if (!subject) {
+function addDashboardSubject(subject) {
+    if (!subject) return;
+    let dashboard = getDashboardSubjects();
+    if (dashboard.includes(subject)) {
+        alert("Môn này đã có trong Dashboard.");
         return;
     }
-
-    let dashboard =
-        getDashboardSubjects();
-
-
-    if (
-        dashboard.includes(
-            subject
-        )
-    ) {
-
-        alert(
-            "Môn này đã có trong Dashboard."
-        );
-
+    if (dashboard.length >= 4) {
+        alert("Dashboard chỉ hiển thị tối đa 4 môn.");
         return;
-
     }
-
-
-    if (
-        dashboard.length >= 4
-    ) {
-
-        alert(
-            "Dashboard chỉ hiển thị tối đa 4 môn."
-        );
-
-        return;
-
-    }
-
-
-    dashboard.push(
-        subject
-    );
-
-
-    saveDashboardSubjects(
-        dashboard
-    );
-
+    dashboard.push(subject);
+    saveDashboardSubjects(dashboard);
     showMenu();
-
 }
 
 
-// =====================================
-// ĐÃ HỌC
-// =====================================
+/* =====================================
+   ĐÃ HỌC / CHƯA THUỘC
+===================================== */
 
 function getLearned() {
-
     try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                LEARNED_KEY
-            )
-        ) || {};
-
-    } catch {
-
-        return {};
-
-    }
-
+        return JSON.parse(localStorage.getItem(LEARNED_KEY)) || {};
+    } catch { return {}; }
 }
 
-
-// =====================================
-// LƯU ĐÃ HỌC
-// =====================================
-
-function saveLearned(
-    data
-) {
-
-    localStorage.setItem(
-        LEARNED_KEY,
-        JSON.stringify(data)
-    );
-
+function saveLearned(data) {
+    localStorage.setItem(LEARNED_KEY, JSON.stringify(data));
 }
 
-
-// =====================================
-// ĐÁNH DẤU ĐÃ HỌC
-// =====================================
-
-function markAsLearned(
-    id
-) {
-
-    if (
-        id === null ||
-        id === undefined ||
-        String(id).trim() === ""
-    ) {
-
-        return;
-
-    }
-
-
-    const learned =
-        getLearned();
-
-
-    learned[
-        String(id)
-    ] = true;
-
-
-    saveLearned(
-        learned
-    );
-
+function markAsLearned(id) {
+    if (id === null || id === undefined || String(id).trim() === "") return;
+    const learned = getLearned();
+    learned[String(id)] = true;
+    saveLearned(learned);
 }
 
-
-// =====================================
-// CHƯA THUỘC
-// =====================================
-
-function isNotLearned(
-    id
-) {
-
-    const count =
-        Number(
-            localStorage.getItem(
-                "repeat_" + id
-            )
-        ) || 0;
-
+function isNotLearned(id) {
+    const count = Number(localStorage.getItem("repeat_" + id)) || 0;
     return count > 0;
+}
 
+/** Tăng repeatCount -> đưa vào danh sách "Chưa thuộc" */
+function markAsNotLearned(id) {
+    if (id === null || id === undefined || String(id).trim() === "") return;
+    const key = "repeat_" + id;
+    const current = Number(localStorage.getItem(key)) || 0;
+    localStorage.setItem(key, current + 1);
 }
 
 
-// =====================================
-// THỐNG KÊ MÔN
-// =====================================
+/* =====================================
+   THỐNG KÊ MÔN
+===================================== */
 
-function getSubjectStats(
-    subject
-) {
-
-    const subjectQuestions =
-        questions.filter(
-            q =>
-                q.mon === subject
-        );
-
-
-    const learned =
-        getLearned();
-
-
-    const total =
-        subjectQuestions.length;
-
-
-    const learnedCount =
-        subjectQuestions.filter(
-            q =>
-                learned[
-                    String(q.id)
-                ]
-        ).length;
-
-
-    const reviewCount =
-        subjectQuestions.filter(
-            q =>
-                isNotLearned(
-                    q.id
-                )
-        ).length;
-
-
-    const remaining =
-        Math.max(
-            0,
-            total - learnedCount
-        );
-
-
-    return {
-        total,
-        learned: learnedCount,
-        review: reviewCount,
-        remaining
-    };
-
+function getSubjectStats(subject) {
+    const subjectQuestions = questions.filter(q => q.mon === subject);
+    const learned = getLearned();
+    const total = subjectQuestions.length;
+    const learnedCount = subjectQuestions.filter(q => learned[String(q.id)]).length;
+    const reviewCount = subjectQuestions.filter(q => isNotLearned(q.id)).length;
+    const remaining = Math.max(0, total - learnedCount);
+    return { total, learned: learnedCount, review: reviewCount, remaining };
 }
 
 
-// =====================================
-// TRANG CHỦ
-// =====================================
+/* =====================================
+   TRANG CHỦ
+===================================== */
 
 function showMenu() {
-
     returnToSearch = false;
+    answeredState = {};
 
-
-    const subjects =
-        getSubjects();
-
-
-    const dashboardSubjects =
-        getDashboardSubjects();
-
-
-    const availableSubjects =
-        subjects.filter(
-            item =>
-                !dashboardSubjects.includes(
-                    item
-                )
-        );
-
+    const subjects = getSubjects();
+    const dashboardSubjects = getDashboardSubjects();
+    const availableSubjects = subjects.filter(s => !dashboardSubjects.includes(s));
 
     let dashboardHTML = "";
 
-
-    for (
-        let i = 0;
-        i < 4;
-        i++
-    ) {
-
-        const subject =
-            dashboardSubjects[i];
-
+    for (let i = 0; i < 4; i++) {
+        const subject = dashboardSubjects[i];
 
         if (subject) {
-
-            const stats =
-                getSubjectStats(
-                    subject
-                );
-
-
+            const stats = getSubjectStats(subject);
             dashboardHTML += `
-
-                <div
-                    class="subject-progress"
-                    onclick='startDashboardQuiz(${JSON.stringify(subject)})'
-                >
-
-                    <button
-                        class="dashboard-remove"
-                        onclick='removeDashboardSubject(${JSON.stringify(subject)}, event)'
-                    >
-                        ×
-                    </button>
-
-                    <div class="subject-name">
-                        ${escapeHTML(subject)}
-                    </div>
-
-                    <div class="progress-item">
-
-                        <span>
-                            Đã học
-                        </span>
-
-                        <strong>
-                            ${stats.learned}
-                        </strong>
-
-                    </div>
-
-                    <div class="progress-item">
-
-                        <span>
-                            Chưa thuộc
-                        </span>
-
-                        <strong>
-                            ${stats.review}
-                        </strong>
-
-                    </div>
-
-                    <div class="progress-item">
-
-                        <span>
-                            Còn lại
-                        </span>
-
-                        <strong>
-                            ${stats.remaining}
-                        </strong>
-
-                    </div>
-
+                <div class="subject-progress" onclick='startDashboardQuiz(${JSON.stringify(subject)})'>
+                    <button class="dashboard-remove"
+                        onclick='removeDashboardSubject(${JSON.stringify(subject)}, event)'>×</button>
+                    <div class="subject-name">${escapeHTML(subject)}</div>
+                    <div class="progress-item"><span>Đã học</span><strong>${stats.learned}</strong></div>
+                    <div class="progress-item"><span>Chưa thuộc</span><strong>${stats.review}</strong></div>
+                    <div class="progress-item"><span>Còn lại</span><strong>${stats.remaining}</strong></div>
                 </div>
-
             `;
-
         } else {
-
-            let options = `
-
-                <option value="">
-                    + THÊM MÔN HỌC
-                </option>
-
-            `;
-
-
-            availableSubjects.forEach(
-                item => {
-
-                    options += `
-
-                        <option
-                            value="${escapeHTML(item)}"
-                        >
-                            ${escapeHTML(item)}
-                        </option>
-
-                    `;
-
-                }
-            );
-
-
+            let options = `<option value="">+ THÊM MÔN HỌC</option>`;
+            availableSubjects.forEach(item => {
+                options += `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`;
+            });
             dashboardHTML += `
-
                 <div class="dashboard-empty">
-
-                    <select
-                        class="dashboard-add-select"
-                        onchange="addDashboardSubject(this.value); this.value='';"
-                    >
-
+                    <select class="dashboard-add-select"
+                        onchange="addDashboardSubject(this.value); this.value='';">
                         ${options}
-
                     </select>
-
                 </div>
-
             `;
-
         }
-
     }
 
-
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
+    const app = document.getElementById("app");
+    if (!app) return;
 
     app.innerHTML = `
-
-        <div class="section-heading">
-            MÔN ĐANG HỌC
-        </div>
-
-
-        <div class="dashboard-grid">
-
-            ${dashboardHTML}
-
-        </div>
-
-
+        <div class="section-heading">MÔN ĐANG HỌC</div>
+        <div class="dashboard-grid">${dashboardHTML}</div>
         <div class="menu-section">
-
-            <button
-                class="menu-button secondary"
-                onclick="showNotLearned()"
-            >
-
+            <button class="menu-button secondary" onclick="showNotLearned()">
                 📚 CÂU CHƯA THUỘC
-
             </button>
-
         </div>
-
-
         <div class="search-home-section">
-
-            <button
-                class="menu-button search-home-button"
-                onclick="showSearch()"
-            >
-
+            <button class="menu-button search-home-button" onclick="showSearch()">
                 🔎 TÌM KIẾM
-
             </button>
-
         </div>
-
     `;
-
 }
 
 
-// =====================================
-// BẮT ĐẦU HỌC TỪ DASHBOARD
-// =====================================
+/* =====================================
+   BẮT ĐẦU HỌC
+===================================== */
 
-function startDashboardQuiz(
-    subject
-) {
-
-    if (!subject) {
+function startDashboardQuiz(subject) {
+    if (!subject) return;
+    selectedQuestions = questions.filter(q => q.mon === subject);
+    if (selectedQuestions.length === 0) {
+        alert("Môn này chưa có câu hỏi.");
         return;
     }
-
-
-    selectedQuestions =
-        questions.filter(
-            q =>
-                q.mon === subject
-        );
-
-
-    if (
-        selectedQuestions.length === 0
-    ) {
-
-        alert(
-            "Môn này chưa có câu hỏi."
-        );
-
-        return;
-
-    }
-
-
-    selectedQuestions =
-        createWeightedQuestions(
-            selectedQuestions
-        );
-
-
+    selectedQuestions = createWeightedQuestions(selectedQuestions);
     currentQuestion = 0;
-
     returnToSearch = false;
-
+    answeredState = {};
     showQuestion();
-
 }
 
-
-// =====================================
-// TẠO TẦN SUẤT
-// =====================================
-
-function createWeightedQuestions(
-    list
-) {
-
+function createWeightedQuestions(list) {
     let result = [];
-
-
-    list.forEach(
-        question => {
-
-            const id =
-                question.id;
-
-
-            const repeatCount =
-                Number(
-                    localStorage.getItem(
-                        "repeat_" + id
-                    )
-                ) || 0;
-
-
-            const weight =
-                1 +
-                repeatCount * 2;
-
-
-            for (
-                let i = 0;
-                i < weight;
-                i++
-            ) {
-
-                result.push(
-                    question
-                );
-
-            }
-
-        }
-    );
-
-
-    for (
-        let i = result.length - 1;
-        i > 0;
-        i--
-    ) {
-
-        const j =
-            Math.floor(
-                Math.random() *
-                (i + 1)
-            );
-
-
-        [
-            result[i],
-            result[j]
-        ] = [
-            result[j],
-            result[i]
-        ];
-
+    list.forEach(question => {
+        const id = question.id;
+        const repeatCount = Number(localStorage.getItem("repeat_" + id)) || 0;
+        const weight = 1 + repeatCount * 2;
+        for (let i = 0; i < weight; i++) result.push(question);
+    });
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
     }
-
-
     return result;
-
 }
 
 
-// =====================================
-// XÁC ĐỊNH LOẠI CÂU HỎI
-// =====================================
+/* =====================================
+   XÁC ĐỊNH LOẠI CÂU HỎI
+   Chỉ chấp nhận MCQ và FILL_BLANK. Khác -> null.
+===================================== */
 
-function getQuestionType(
-    q
-) {
+function getQuestionType(q) {
+    if (!q) return null;
+    const type = String(q.dang || "").trim().toUpperCase();
+    if (type === "MCQ") return "MCQ";
+    if (type === "FILL_BLANK") return "FILL_BLANK";
+    return null;
+}
 
-    const type =
-        String(
-            q.dang || ""
-        )
-            .trim()
-            .toUpperCase();
-
+/* Lọc câu hợp lệ ngay từ đầu */
+function isValidQuestion(q) {
+    const type = getQuestionType(q);
+    if (!type) return false;
 
     if (type === "MCQ") {
-        return "MCQ";
+        if (!q.choices) return false;
+        const choices = getChoices(q.choices);
+        if (choices.length === 0) return false;
+        if (!q.answer) return false;
+        return true;
     }
 
-
-    if (
-        type === "FILL_BLANK"
-    ) {
-
-        return "FILL_BLANK";
-
-    }
-
-
-    return "FLASHCARD";
-
+    // FILL_BLANK
+    const placeholderCount = countPlaceholders(q.question || "");
+    if (placeholderCount === 0) return false;
+    const answers = getFillBlankAnswers(q.answer);
+    if (answers.length !== placeholderCount) return false;
+    return true;
 }
 
 
-// =====================================
-// HIỆN CÂU HỎI
-// =====================================
+/* =====================================
+   HIỆN CÂU HỎI
+===================================== */
 
-function showQuestion(
-    skipLearning = false
-) {
-
-    // Reset đếm số lần sai mỗi khi sang câu mới
-    fillBlankWrongCount = 0;
-
-    if (mcqWrongTimer) {
-        clearTimeout(mcqWrongTimer);
-        mcqWrongTimer = null;
-    }
-
-
-    const q =
-        selectedQuestions[
-            currentQuestion
-        ];
-
+function showQuestion() {
+    const q = selectedQuestions[currentQuestion];
 
     if (!q) {
-
         showResult();
-
         return;
-
     }
 
-
-    if (!skipLearning) {
-
-        markAsLearned(
-            q.id
-        );
-
-    }
-
-
-    const questionType =
-        getQuestionType(
-            q
-        );
-
-
-    if (
-        questionType === "MCQ"
-    ) {
-
-        showMCQQuestion(
-            q
-        );
-
+    // Nếu câu không hợp lệ -> bỏ qua, sang câu kế tiếp
+    if (!isValidQuestion(q)) {
+        console.warn("Bỏ qua câu hỏi không hợp lệ:", q && q.id, q && q.dang);
+        currentQuestion++;
+        if (currentQuestion >= selectedQuestions.length) {
+            showResult();
+        } else {
+            showQuestion();
+        }
         return;
-
     }
 
-
-    if (
-        questionType === "FILL_BLANK"
-    ) {
-
-        showFillBlankQuestion(
-            q
-        );
-
-        return;
-
+    // Đảm bảo có state
+    if (!answeredState[currentQuestion]) {
+        answeredState[currentQuestion] = createEmptyState(q);
     }
 
+    // Đánh dấu đã học
+    markAsLearned(q.id);
 
-    showFlashcardQuestion(
-        q
-    );
+    const type = getQuestionType(q);
+    if (type === "MCQ") {
+        renderMCQ(q, answeredState[currentQuestion]);
+    } else {
+        renderFillBlank(q, answeredState[currentQuestion]);
+    }
+}
 
+function createEmptyState(q) {
+    const type = getQuestionType(q);
+    if (type === "MCQ") {
+        return {
+            type: "MCQ",
+            checked: false,
+            selectedIndex: null,
+            isCorrect: false,
+            markedNotLearned: false,
+        };
+    }
+    return {
+        type: "FILL_BLANK",
+        checked: false,
+        userAnswers: [],
+        results: [],
+        markedNotLearned: false,
+    };
 }
 
 
-// =====================================
-// HEADER CÂU HỎI
-// =====================================
+/* =====================================
+   HEADER
+===================================== */
 
-function createStudyHeader(
-    q
-) {
-
+function createStudyHeader(q) {
     return `
-
         <div class="study-header">
-
-            <button
-                class="back-button"
-                onclick="goBackToMenu()"
-            >
-                ←
-            </button>
-
-
+            <button class="back-button" onclick="goBackToMenu()">←</button>
             <div class="study-header-info">
-
-                <div class="study-subject">
-
-                    ${escapeHTML(q.mon)}
-
-                </div>
-
-
+                <div class="study-subject">${escapeHTML(q.mon)}</div>
                 <div class="study-counter">
-
-                    Câu ${currentQuestion + 1}
-                    /
-                    ${selectedQuestions.length}
-
+                    Câu ${currentQuestion + 1} / ${selectedQuestions.length}
                 </div>
-
             </div>
-
         </div>
-
     `;
-
 }
 
 
-// =====================================
-// THANH ĐIỀU HƯỚNG CUỐI CARD
-// =====================================
+/* =====================================
+   BOTTOM NAV - LUÔN HIỂN THỊ
+   - "Câu trước" disable khi ở câu đầu
+   - "Câu tiếp theo" luôn active
+===================================== */
 
 function createBottomNav() {
-
+    const isFirst = currentQuestion === 0;
     return `
-
-        <div class="bottom-nav">
-
-            <button
-                type="button"
-                class="bottom-nav-button review"
-                onclick="markNotLearned(event)"
-            >
-
-                <span class="nav-icon">🔴</span>
-                <span class="nav-label">Chưa thuộc</span>
-
-            </button>
-
-
-            <button
-                type="button"
-                class="bottom-nav-button next"
-                onclick="nextQuestion(event)"
-            >
-
-                <span class="nav-label">Câu tiếp theo</span>
-                <span class="nav-icon">→</span>
-
-            </button>
-
+        <div class="bottom-nav-wrapper">
+            <div class="bottom-nav">
+                <button type="button"
+                    class="bottom-nav-button prev"
+                    onclick="prevQuestion(event)"
+                    ${isFirst ? "disabled" : ""}>
+                    <span class="nav-icon">←</span>
+                    <span class="nav-label">Câu trước</span>
+                </button>
+                <button type="button"
+                    class="bottom-nav-button next"
+                    onclick="nextQuestion(event)">
+                    <span class="nav-label">Câu tiếp theo</span>
+                    <span class="nav-icon">→</span>
+                </button>
+            </div>
         </div>
-
     `;
-
 }
 
 
-// =====================================
-// MCQ
-// =====================================
+/* =====================================
+   MCQ
+===================================== */
 
-function showMCQQuestion(
-    q
-) {
+function renderMCQ(q, state) {
+    const app = document.getElementById("app");
+    if (!app) return;
 
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
-
-    const choices =
-        getChoices(
-            q.choices
-        );
-
+    const choices = getChoices(q.choices);
+    const correctAnswer = String(q.answer ?? "").trim();
 
     let choicesHTML = "";
+    choices.forEach((choice, index) => {
+        let cls = "answer-choice";
+        let tick = "";
 
+        if (state.checked) {
+            const isCorrectChoice = normalizeAnswer(choice) === normalizeAnswer(correctAnswer);
+            const isSelected = state.selectedIndex === index;
 
-    choices.forEach(
-        (
-            choice,
-            index
-        ) => {
-
-            choicesHTML += `
-
-                <button
-                    type="button"
-                    class="answer-choice"
-                    onclick="checkMCQAnswer(${index}, event)"
-                >
-
-                    <span class="choice-tick"></span>
-
-                    <span class="choice-text">
-
-                        ${formatText(choice)}
-
-                    </span>
-
-                </button>
-
-            `;
-
+            if (isCorrectChoice) {
+                cls += " correct";
+                tick = `<span class="choice-tick"></span>`;
+            } else if (isSelected) {
+                cls += " wrong";
+                tick = `<span class="choice-tick"></span>`;
+            } else {
+                tick = `<span class="choice-tick"></span>`;
+            }
+        } else {
+            if (state.selectedIndex === index) cls += " selected";
+            tick = `<span class="choice-tick"></span>`;
         }
-    );
 
+        choicesHTML += `
+            <button type="button"
+                class="${cls}"
+                data-index="${index}"
+                onclick="selectMCQAnswer(${index}, event)"
+                ${state.checked ? "disabled" : ""}>
+                ${tick}
+                <span class="choice-text">${formatText(choice)}</span>
+            </button>
+        `;
+    });
+
+    const checkDisabled = state.checked || state.selectedIndex === null;
 
     app.innerHTML = `
-
         ${createStudyHeader(q)}
-
         <div class="interactive-card">
+            <div class="mcq-question-text">${formatText(q.question)}</div>
 
-            <div class="card-label">
-                TRẮC NGHIỆM
+            <div id="mcqChoices" class="answer-choices">${choicesHTML}</div>
+
+            <div class="mcq-actions">
+                <button type="button"
+                    class="check-answer-button"
+                    id="mcqCheckButton"
+                    onclick="checkMCQAnswer(event)"
+                    ${checkDisabled ? "disabled" : ""}>
+                    KIỂM TRA
+                </button>
             </div>
 
+            <div id="mcqExplanation"></div>
+            <div id="autoNotLearned"></div>
 
-            <div class="interactive-question">
-
-                ${formatText(q.question)}
-
-            </div>
-
-
-            <div
-                id="mcqChoices"
-                class="answer-choices"
-            >
-
-                ${choicesHTML}
-
-            </div>
-
-
-            <div
-                id="mcqFeedback"
-                class="answer-feedback"
-            ></div>
-
-
-            <div
-                id="mcqExplanation"
-                class="explanation-section interactive-explanation"
-            ></div>
-
-
-            <div
-                id="bottomNav"
-                class="bottom-nav-wrapper"
-                style="display:none;"
-            >
-
-                ${createBottomNav()}
-
-            </div>
-
+            ${createBottomNav()}
         </div>
-
     `;
 
+    // Nếu đã check -> render luôn explanation
+    if (state.checked) {
+        renderMCQExplanation(q, state);
+    }
 }
 
+function selectMCQAnswer(index, event) {
+    if (event) event.stopPropagation();
 
-// =====================================
-// TÁCH LỰA CHỌN
-// =====================================
+    const state = answeredState[currentQuestion];
+    if (!state || state.checked) return;
 
-function getChoices(
-    choices
-) {
+    state.selectedIndex = index;
 
-    if (
-        choices === null ||
-        choices === undefined
-    ) {
+    // Cập nhật UI
+    document.querySelectorAll(".answer-choice").forEach((btn, i) => {
+        btn.classList.toggle("selected", i === index);
+    });
 
-        return [];
-
-    }
-
-
-    return String(choices)
-        .split(/\r?\n/)
-        .map(
-            choice =>
-                choice.trim()
-        )
-        .filter(
-            choice =>
-                choice !== ""
-        );
-
+    const checkBtn = document.getElementById("mcqCheckButton");
+    if (checkBtn) checkBtn.disabled = false;
 }
 
+function checkMCQAnswer(event) {
+    if (event) event.stopPropagation();
 
-// =====================================
-// KIỂM TRA MCQ
-// =====================================
+    const q = selectedQuestions[currentQuestion];
+    const state = answeredState[currentQuestion];
+    if (!q || !state || state.checked) return;
 
-function checkMCQAnswer(
-    index,
-    event
-) {
+    const choices = getChoices(q.choices);
+    const correctAnswer = String(q.answer ?? "").trim();
+    const selectedAnswer = choices[state.selectedIndex];
 
-    if (event) {
-        event.stopPropagation();
-    }
+    const isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(correctAnswer);
+    state.isCorrect = isCorrect;
+    state.checked = true;
 
+    // Đánh dấu lại UI
+    document.querySelectorAll(".answer-choice").forEach((btn, i) => {
+        btn.disabled = true;
+        btn.classList.remove("selected");
 
-    const q =
-        selectedQuestions[
-            currentQuestion
-        ];
-
-
-    if (!q) {
-        return;
-    }
-
-
-    const choices =
-        getChoices(
-            q.choices
-        );
-
-
-    const selectedAnswer =
-        choices[index];
-
-
-    const correctAnswer =
-        String(
-            q.answer ?? ""
-        ).trim();
-
-
-    const buttons =
-        document.querySelectorAll(
-            ".answer-choice"
-        );
-
-
-    const feedback =
-        document.getElementById(
-            "mcqFeedback"
-        );
-
-
-    const explanation =
-        document.getElementById(
-            "mcqExplanation"
-        );
-
-
-    if (
-        !feedback ||
-        !explanation
-    ) {
-
-        return;
-
-    }
-
-
-    const isCorrect =
-        normalizeAnswer(
-            selectedAnswer
-        ) ===
-        normalizeAnswer(
-            correctAnswer
-        );
-
-
-    // =================================
-    // TRẢ LỜI ĐÚNG
-    // =================================
-
-    if (isCorrect) {
-
-        if (mcqWrongTimer) {
-            clearTimeout(mcqWrongTimer);
-            mcqWrongTimer = null;
+        const choice = choices[i];
+        if (normalizeAnswer(choice) === normalizeAnswer(correctAnswer)) {
+            btn.classList.add("correct");
+        } else if (i === state.selectedIndex) {
+            btn.classList.add("wrong");
         }
+    });
 
-        buttons.forEach(
-            (
-                button,
-                buttonIndex
-            ) => {
+    const checkBtn = document.getElementById("mcqCheckButton");
+    if (checkBtn) checkBtn.disabled = true;
 
-                button.disabled = true;
+    if (!isCorrect) {
+        if (!state.markedNotLearned) {
+            markAsNotLearned(q.id);
+            state.markedNotLearned = true;
+        }
+    }
 
-                button.classList.remove(
-                    "wrong"
-                );
+    renderMCQExplanation(q, state);
+}
 
+function renderMCQExplanation(q, state) {
+    const expBox = document.getElementById("mcqExplanation");
+    const noteBox = document.getElementById("autoNotLearned");
+    if (!expBox) return;
 
-                const answer =
-                    choices[
-                        buttonIndex
-                    ];
-
-
-                if (
-                    normalizeAnswer(answer) ===
-                    normalizeAnswer(correctAnswer)
-                ) {
-
-                    button.classList.add(
-                        "correct"
-                    );
-
-                }
-
-            }
-        );
-
-
-        // Không hiện chữ "Chính xác",
-        // chỉ tick lên đáp án đúng.
-        feedback.innerHTML = "";
-
-
-        explanation.innerHTML = `
-
-            <div class="explanation-title">
-
-                GIẢI THÍCH
-
-            </div>
-
-
+    expBox.innerHTML = `
+        <div class="explanation-section">
+            <div class="explanation-title">GIẢI THÍCH</div>
             <div class="feedback-explanation">
-
-                ${
-                    q.explanation
-                        ? formatText(
-                            q.explanation
-                        )
-                        : "Không có giải thích cho câu này."
-                }
-
+                ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
             </div>
+        </div>
+    `;
 
-        `;
-
-
-        const bottomNav =
-            document.getElementById(
-                "bottomNav"
-            );
-
-
-        if (bottomNav) {
-
-            bottomNav.style.display =
-                "block";
-
+    if (noteBox) {
+        if (!state.isCorrect && state.markedNotLearned) {
+            noteBox.innerHTML = `
+                <div class="auto-not-learned-note">
+                    📌 Câu này đã được thêm vào danh sách Chưa thuộc
+                </div>
+            `;
+        } else {
+            noteBox.innerHTML = "";
         }
+    }
+}
 
 
-        return;
+/* =====================================
+   FILL_BLANK
+===================================== */
 
+function renderFillBlank(q, state) {
+    const app = document.getElementById("app");
+    if (!app) return;
+
+    const questionHTML = formatText(q.question);
+    const correctAnswers = getFillBlankAnswers(q.answer);
+
+    // Tách câu hỏi thành 2 phần:
+    // - Phần đầu: câu hỏi dẫn
+    // - Phần sau: đoạn có {{n}}
+    const parts = splitFillBlankQuestion(q.question);
+
+    // Người dùng đã nhập -> khôi phục
+    if (!state.userAnswers || state.userAnswers.length !== correctAnswers.length) {
+        state.userAnswers = new Array(correctAnswers.length).fill("");
     }
 
-
-    // =================================
-    // TRẢ LỜI SAI
-    // =================================
-
-    // Hiện dấu ✗ đỏ ngay trên lựa chọn vừa bấm,
-    // tự ẩn sau 600ms để người dùng thử lại.
-
-    buttons.forEach(
-        (
-            button,
-            buttonIndex
-        ) => {
-
-            button.disabled = false;
-
-            button.classList.remove(
-                "correct",
-                "wrong"
-            );
-
-
-            if (
-                buttonIndex === index
-            ) {
-
-                button.classList.add(
-                    "wrong"
-                );
-
-            }
-
-        }
+    // Xây đoạn trả lời có input
+    const answerHTML = buildFillBlankAnswerHTML(
+        parts.answerTemplate,
+        state.userAnswers,
+        state.checked,
+        state.results
     );
 
+    // Đoạn đáp án đúng (chỉ hiện khi checked)
+    const dapAnHTML = state.checked
+        ? buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers)
+        : "";
 
-    if (mcqWrongTimer) {
-        clearTimeout(mcqWrongTimer);
-    }
-
-
-    mcqWrongTimer =
-        setTimeout(
-            () => {
-
-                buttons.forEach(
-                    button => {
-
-                        button.classList.remove(
-                            "wrong"
-                        );
-
-                    }
-                );
-
-                mcqWrongTimer = null;
-
-            },
-            600
-        );
-
-
-    // Không hiện chữ "Chưa chính xác" nữa
-    feedback.innerHTML = "";
-
-    explanation.innerHTML = "";
-
-}
-
-
-// =====================================
-// ĐIỀN KHUYẾT
-// =====================================
-
-function showFillBlankQuestion(
-    q
-) {
-
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
+    const checkDisabled = state.checked || !hasAnyInput(state.userAnswers);
 
     app.innerHTML = `
-
         ${createStudyHeader(q)}
-
         <div class="interactive-card">
 
-            <div class="card-label">
-                ĐIỀN KHUYẾT
+            <div class="fill-blank-cau-hoi">
+                <div class="card-label">CÂU HỎI</div>
+                <div class="fill-blank-cau-hoi-text">${parts.questionPart}</div>
             </div>
 
-
-            <div class="interactive-question">
-
-                ${formatText(q.question)}
-
+            <div class="fill-blank-tra-loi">
+                <div class="card-label">TRẢ LỜI</div>
+                <div class="fill-blank-tra-loi-text" id="fillBlankAnswerArea">
+                    ${answerHTML}
+                </div>
             </div>
 
+            <div class="fill-blank-actions">
+                <button type="button"
+                    class="check-answer-button"
+                    id="fillCheckButton"
+                    onclick="checkFillBlankAnswer(event)"
+                    ${checkDisabled ? "disabled" : ""}>
+                    KIỂM TRA
+                </button>
+            </div>
 
-            <div class="fill-answer-area">
+            <div id="fillDapAn">${dapAnHTML}</div>
+            <div id="fillGiaiThich"></div>
+            <div id="autoNotLearned"></div>
 
-                <input
-                    id="fillAnswerInput"
-                    class="fill-answer-input"
-                    type="text"
-                    placeholder="Nhập câu trả lời..."
+            ${createBottomNav()}
+        </div>
+    `;
+
+    // Gắn sự kiện cho các input
+    attachFillBlankInputs(q, state);
+
+    // Khôi phục trạng thái checked
+    if (state.checked) {
+        renderFillBlankExplanation(q, state);
+        lockFillBlankInputs(state);
+    }
+}
+
+/** Tách question thành 2 phần: dẫn + đoạn có {{n}} */
+function splitFillBlankQuestion(question) {
+    const text = String(question ?? "");
+
+    // Tìm vị trí {{1}} đầu tiên
+    const match = text.match(/\{\{1\}\}/);
+    if (!match) {
+        return { questionPart: escapeHTML(text), answerTemplate: "" };
+    }
+
+    // Tìm đoạn "Đáp án:" phía trước để loại bỏ khỏi phần câu hỏi
+    let questionPartRaw = text.slice(0, match.index);
+    let answerTemplate = text.slice(match.index);
+
+    // Nếu questionPart chứa "Đáp án:" -> cắt bỏ
+    const dapAnIdx = questionPartRaw.lastIndexOf("Đáp án:");
+    if (dapAnIdx !== -1) {
+        questionPartRaw = questionPartRaw.slice(0, dapAnIdx);
+    }
+
+    questionPartRaw = questionPartRaw.trim();
+
+    return {
+        questionPart: formatText(questionPartRaw),
+        answerTemplate: answerTemplate.trim(),
+    };
+}
+
+/** Sinh HTML cho đoạn trả lời: thay {{n}} bằng input */
+function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
+    if (!template) return "";
+
+    const regex = /\{\{(\d+)\}\}/g;
+    let html = "";
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(template)) !== null) {
+        // Text trước placeholder
+        html += escapeHTML(template.slice(lastIndex, match.index));
+
+        const idx = parseInt(match[1], 10) - 1; // 0-based
+        const val = userAnswers[idx] || "";
+
+        let inputCls = "fill-blank-inline-input";
+        let statusHTML = "";
+
+        if (checked) {
+            const isCorrect = results[idx];
+            inputCls += isCorrect ? " correct-input" : " wrong-input";
+            statusHTML = isCorrect
+                ? `<span class="fill-blank-inline-status fill-status-correct">✓</span>`
+                : `<span class="fill-blank-inline-status fill-status-wrong">✗</span>`;
+        }
+
+        html += `
+            <span class="fill-blank-inline" data-index="${idx}">
+                <input type="text"
+                    class="${inputCls}"
+                    data-index="${idx}"
+                    value="${escapeHTML(val)}"
                     autocomplete="off"
                     autocorrect="off"
                     spellcheck="false"
-                    onkeydown="handleFillBlankKey(event)"
-                >
+                    ${checked ? "disabled" : ""}>
+                ${statusHTML}
+            </span>
+        `;
 
+        lastIndex = match.index + match[0].length;
+    }
 
-                <button
-                    type="button"
-                    class="check-answer-button"
-                    onclick="checkFillBlankAnswer(event)"
-                >
+    html += escapeHTML(template.slice(lastIndex));
 
-                    KIỂM TRA
+    // Đổi \n thành <br> cho xuống dòng
+    return html.replace(/\n/g, "<br>");
+}
 
-                </button>
+/** Sinh HTML khối ĐÁP ÁN */
+function buildFillBlankDapAnHTML(template, correctAnswers) {
+    if (!template) return "";
 
-            </div>
+    const regex = /\{\{(\d+)\}\}/g;
+    let html = "";
+    let lastIndex = 0;
+    let match;
 
+    while ((match = regex.exec(template)) !== null) {
+        html += escapeHTML(template.slice(lastIndex, match.index));
+        const idx = parseInt(match[1], 10) - 1;
+        const val = correctAnswers[idx] || "";
+        html += `<span class="answer-highlight">${escapeHTML(val)}</span>`;
+        lastIndex = match.index + match[0].length;
+    }
 
-            <div
-                id="fillFeedback"
-                class="answer-feedback"
-            ></div>
+    html += escapeHTML(template.slice(lastIndex));
+    html = html.replace(/\n/g, "<br>");
 
-
-            <div
-                id="fillExplanation"
-                class="explanation-section interactive-explanation"
-            ></div>
-
-
-            <div
-                id="bottomNav"
-                class="bottom-nav-wrapper"
-                style="display:none;"
-            >
-
-                ${createBottomNav()}
-
-            </div>
-
+    return `
+        <div class="fill-dap-an">
+            <div class="explanation-title">ĐÁP ÁN</div>
+            <div>${html}</div>
         </div>
-
     `;
+}
 
+/** Gắn sự kiện input + Enter cho FILL_BLANK */
+function attachFillBlankInputs(q, state) {
+    const inputs = document.querySelectorAll(".fill-blank-inline-input");
+    if (!inputs.length) return;
 
-    setTimeout(
-        () => {
+    inputs.forEach(input => {
+        input.addEventListener("input", (e) => {
+            const idx = Number(e.target.dataset.index);
+            const val = e.target.value;
 
-            const input =
-                document.getElementById(
-                    "fillAnswerInput"
-                );
+            state.userAnswers[idx] = val;
 
-
-            if (input) {
-                input.focus();
+            // Cập nhật trạng thái nút KIỂM TRA
+            const checkBtn = document.getElementById("fillCheckButton");
+            if (checkBtn) {
+                checkBtn.disabled = state.checked || !hasAnyInput(state.userAnswers);
             }
+        });
 
-        },
-        100
-    );
-
-}
-
-
-// =====================================
-// ENTER ĐỂ KIỂM TRA
-// =====================================
-
-function handleFillBlankKey(
-    event
-) {
-
-    if (
-        event.key === "Enter"
-    ) {
-
-        checkFillBlankAnswer(
-            event
-        );
-
-    }
-
-}
-
-
-// =====================================
-// KIỂM TRA ĐIỀN KHUYẾT
-// =====================================
-
-function checkFillBlankAnswer(
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-
-    const q =
-        selectedQuestions[
-            currentQuestion
-        ];
-
-
-    if (!q) {
-        return;
-    }
-
-
-    const input =
-        document.getElementById(
-            "fillAnswerInput"
-        );
-
-
-    const feedback =
-        document.getElementById(
-            "fillFeedback"
-        );
-
-
-    const explanation =
-        document.getElementById(
-            "fillExplanation"
-        );
-
-
-    if (
-        !input ||
-        !feedback ||
-        !explanation
-    ) {
-
-        return;
-
-    }
-
-
-    const userAnswer =
-        input.value.trim();
-
-
-    if (!userAnswer) {
-
-        input.focus();
-
-        return;
-
-    }
-
-
-    const acceptedAnswers =
-        getAcceptedAnswers(
-            q.answer
-        );
-
-
-    const isCorrect =
-        acceptedAnswers.some(
-            answer =>
-                normalizeAnswer(answer) ===
-                normalizeAnswer(userAnswer)
-        );
-
-
-    // =================================
-    // ĐÚNG
-    // =================================
-
-    if (isCorrect) {
-
-        input.disabled = true;
-
-
-        const checkButton =
-            document.querySelector(
-                ".check-answer-button"
-            );
-
-
-        if (checkButton) {
-            checkButton.disabled = true;
-        }
-
-
-        input.classList.remove(
-            "wrong-input"
-        );
-
-
-        input.classList.add(
-            "correct-input"
-        );
-
-
-        feedback.innerHTML = "";
-
-
-        explanation.innerHTML = `
-
-            <div class="explanation-title">
-
-                GIẢI THÍCH
-
-            </div>
-
-
-            <div class="feedback-explanation">
-
-                ${
-                    q.explanation
-                        ? formatText(
-                            q.explanation
-                        )
-                        : "Không có giải thích cho câu này."
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                // Nếu chưa checked và có ít nhất 1 ô nhập -> kiểm tra
+                if (!state.checked && hasAnyInput(state.userAnswers)) {
+                    checkFillBlankAnswer(e);
                 }
+            }
+        });
+    });
+}
 
+function hasAnyInput(arr) {
+    if (!arr || !arr.length) return false;
+    return arr.some(v => String(v || "").trim() !== "");
+}
+
+function lockFillBlankInputs(state) {
+    document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
+        inp.disabled = true;
+    });
+    const btn = document.getElementById("fillCheckButton");
+    if (btn) btn.disabled = true;
+}
+
+function checkFillBlankAnswer(event) {
+    if (event) event.stopPropagation();
+
+    const q = selectedQuestions[currentQuestion];
+    const state = answeredState[currentQuestion];
+    if (!q || !state || state.checked) return;
+
+    const correctAnswers = getFillBlankAnswers(q.answer);
+    const inputs = document.querySelectorAll(".fill-blank-inline-input");
+
+    // Cập nhật state từ DOM
+    inputs.forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        state.userAnswers[idx] = inp.value;
+    });
+
+    // So sánh
+    state.results = correctAnswers.map((ans, i) => {
+        const user = state.userAnswers[i] || "";
+        return normalizeAnswer(user) === normalizeAnswer(ans);
+    });
+
+    state.checked = true;
+
+    const hasWrong = state.results.some(r => !r);
+
+    if (hasWrong) {
+        if (!state.markedNotLearned) {
+            markAsNotLearned(q.id);
+            state.markedNotLearned = true;
+        }
+    }
+
+    // Cập nhật UI input + tick
+    inputs.forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        inp.disabled = true;
+        inp.classList.remove("correct-input", "wrong-input");
+        inp.classList.add(state.results[idx] ? "correct-input" : "wrong-input");
+
+        // Thêm tick cạnh input
+        const wrapper = inp.closest(".fill-blank-inline");
+        if (wrapper) {
+            const oldStatus = wrapper.querySelector(".fill-blank-inline-status");
+            if (oldStatus) oldStatus.remove();
+
+            const status = document.createElement("span");
+            status.className = state.results[idx]
+                ? "fill-blank-inline-status fill-status-correct"
+                : "fill-blank-inline-status fill-status-wrong";
+            status.textContent = state.results[idx] ? "✓" : "✗";
+            wrapper.appendChild(status);
+        }
+    });
+
+    // Disable nút KIỂM TRA
+    const checkBtn = document.getElementById("fillCheckButton");
+    if (checkBtn) checkBtn.disabled = true;
+
+    // Render khối ĐÁP ÁN
+    const parts = splitFillBlankQuestion(q.question);
+    const dapAnBox = document.getElementById("fillDapAn");
+    if (dapAnBox) {
+        dapAnBox.innerHTML = buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers);
+    }
+
+    // Render giải thích + note
+    renderFillBlankExplanation(q, state);
+}
+
+function renderFillBlankExplanation(q, state) {
+    const expBox = document.getElementById("fillGiaiThich");
+    const noteBox = document.getElementById("autoNotLearned");
+
+    if (expBox) {
+        expBox.innerHTML = `
+            <div class="explanation-section fill-giai-thich">
+                <div class="explanation-title">GIẢI THÍCH</div>
+                <div class="feedback-explanation">
+                    ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
+                </div>
             </div>
-
         `;
-
-
-        const bottomNav =
-            document.getElementById(
-                "bottomNav"
-            );
-
-
-        if (bottomNav) {
-
-            bottomNav.style.display =
-                "block";
-
-        }
-
-
-        return;
-
     }
 
-
-    // =================================
-    // SAI
-    // =================================
-
-    fillBlankWrongCount++;
-
-
-    input.classList.remove(
-        "correct-input"
-    );
-
-
-    input.classList.add(
-        "wrong-input"
-    );
-
-
-    // Nếu đã sai quá 2 lần thì hiện đáp án luôn
-    if (fillBlankWrongCount >= 3) {
-
-        input.disabled = true;
-
-
-        const checkButton =
-            document.querySelector(
-                ".check-answer-button"
-            );
-
-
-        if (checkButton) {
-            checkButton.disabled = true;
-        }
-
-
-        const correctAnswers =
-            acceptedAnswers.join(" / ");
-
-
-        feedback.innerHTML = `
-
-            <div class="wrong-feedback">
-
-                <div class="feedback-title">
-
-                    ❌ Chưa chính xác
-
+    if (noteBox) {
+        const hasWrong = state.results && state.results.some(r => !r);
+        if (hasWrong && state.markedNotLearned) {
+            noteBox.innerHTML = `
+                <div class="auto-not-learned-note">
+                    📌 Câu này đã được thêm vào danh sách Chưa thuộc
                 </div>
-
-
-                <div class="hint-box">
-
-                    Đáp án đúng:
-
-                    <strong>
-                        ${formatText(correctAnswers)}
-                    </strong>
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        explanation.innerHTML = `
-
-            <div class="explanation-title">
-
-                GIẢI THÍCH
-
-            </div>
-
-
-            <div class="feedback-explanation">
-
-                ${
-                    q.explanation
-                        ? formatText(
-                            q.explanation
-                        )
-                        : "Không có giải thích cho câu này."
-                }
-
-            </div>
-
-        `;
-
-
-        const bottomNav =
-            document.getElementById(
-                "bottomNav"
-            );
-
-
-        if (bottomNav) {
-
-            bottomNav.style.display =
-                "block";
-
+            `;
+        } else {
+            noteBox.innerHTML = "";
         }
-
-
-        return;
-
     }
-
-
-    // Còn lượt thử → hiện gợi ý và số lần còn lại
-
-    const hint =
-        String(
-            q.hint || ""
-        ).trim();
-
-
-    const remaining =
-        3 - fillBlankWrongCount;
-
-
-    feedback.innerHTML = `
-
-        <div class="wrong-feedback">
-
-            <div class="feedback-title">
-
-                ❌ Chưa chính xác
-
-            </div>
-
-
-            <div class="hint-box">
-
-                💡 <strong>Gợi ý:</strong>
-
-                ${
-                    hint
-                        ? formatText(hint)
-                        : "Hãy thử lại."
-                }
-
-                <br>
-
-                <small>
-                    Còn ${remaining} lần thử.
-                </small>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    explanation.innerHTML = "";
-
-    input.focus();
-
 }
 
 
-// =====================================
-// TÁCH ĐÁP ÁN ĐƯỢC CHẤP NHẬN
-// =====================================
+/* =====================================
+   ĐIỀU HƯỚNG
+===================================== */
 
-function getAcceptedAnswers(
-    answer
-) {
-
-    if (
-        answer === null ||
-        answer === undefined
-    ) {
-
-        return [];
-
-    }
-
-
-    return String(answer)
-        .split(/\r?\n/)
-        .map(
-            item =>
-                item.trim()
-        )
-        .filter(
-            item =>
-                item !== ""
-        );
-
+function prevQuestion(event) {
+    if (event) event.stopPropagation();
+    if (currentQuestion <= 0) return;
+    currentQuestion--;
+    showQuestion();
 }
 
-
-// =====================================
-// CHUẨN HÓA ĐÁP ÁN
-// =====================================
-
-function normalizeAnswer(
-    text
-) {
-
-    return normalizeText(
-        text
-    )
-        .replace(
-            /\s+/g,
-            " "
-        )
-        .trim();
-
-}
-
-
-// =====================================
-// CÂU HỎI THƯỜNG (ẨN ĐÁP ÁN)
-// =====================================
-
-function showFlashcardQuestion(
-    q
-) {
-
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
-
-    app.innerHTML = `
-
-        ${createStudyHeader(q)}
-
-        <div class="normal-question-card">
-
-            <div class="card-label">
-
-                CÂU HỎI
-
-            </div>
-
-
-            <div class="normal-question">
-
-                ${formatText(
-                    q.question
-                )}
-
-            </div>
-
-
-            <button
-                type="button"
-                id="toggleAnswerButton"
-                class="toggle-answer-button"
-                onclick="toggleFlashcardAnswer(event)"
-            >
-
-                <span class="toggle-icon">👁️</span>
-                <span class="toggle-label">Xem đáp án</span>
-
-            </button>
-
-
-            <div
-                id="flashcardAnswerSection"
-                class="flashcard-answer-section"
-                style="display:none;"
-            >
-
-                <div class="answer-section">
-
-                    <div class="card-label">
-
-                        ĐÁP ÁN
-
-                    </div>
-
-
-                    <div class="flashcard-answer">
-
-                        ${formatText(
-                            q.answer
-                        )}
-
-                    </div>
-
-                </div>
-
-
-                <div class="explanation-section">
-
-                    <div class="card-label">
-
-                        GIẢI THÍCH
-
-                    </div>
-
-
-                    <div class="flashcard-explanation">
-
-                        ${
-                            q.explanation
-                                ? formatText(
-                                    q.explanation
-                                )
-                                : "Không có giải thích cho câu này."
-                        }
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            ${createBottomNav()}
-
-        </div>
-
-    `;
-
-}
-
-
-// =====================================
-// ẨN / HIỆN ĐÁP ÁN
-// =====================================
-
-function toggleFlashcardAnswer(
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-
-    const section =
-        document.getElementById(
-            "flashcardAnswerSection"
-        );
-
-
-    const button =
-        document.getElementById(
-            "toggleAnswerButton"
-        );
-
-
-    if (!section || !button) {
-        return;
-    }
-
-
-    const isHidden =
-        section.style.display ===
-        "none";
-
-
-    const icon =
-        button.querySelector(
-            ".toggle-icon"
-        );
-
-
-    const label =
-        button.querySelector(
-            ".toggle-label"
-        );
-
-
-    if (isHidden) {
-
-        section.style.display =
-            "block";
-
-
-        if (icon) {
-            icon.textContent = "🙈";
-        }
-
-
-        if (label) {
-            label.textContent = "Ẩn đáp án";
-        }
-
-    } else {
-
-        section.style.display =
-            "none";
-
-
-        if (icon) {
-            icon.textContent = "👁️";
-        }
-
-
-        if (label) {
-            label.textContent = "Xem đáp án";
-        }
-
-    }
-
-}
-
-
-// =====================================
-// CHƯA THUỘC
-// =====================================
-
-function markNotLearned(
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-
-    const q =
-        selectedQuestions[
-            currentQuestion
-        ];
-
-
-    if (!q) {
-        return;
-    }
-
-
-    const key =
-        "repeat_" + q.id;
-
-
-    const current =
-        Number(
-            localStorage.getItem(
-                key
-            )
-        ) || 0;
-
-
-    localStorage.setItem(
-        key,
-        current + 1
-    );
-
-
-    nextQuestion();
-
-}
-
-
-// =====================================
-// CÂU TIẾP THEO
-// =====================================
-
-function nextQuestion(
-    event
-) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
+function nextQuestion(event) {
+    if (event) event.stopPropagation();
 
     currentQuestion++;
 
-
-    if (
-        currentQuestion >=
-        selectedQuestions.length
-    ) {
-
+    if (currentQuestion >= selectedQuestions.length) {
         showResult();
-
         return;
-
     }
-
-
     showQuestion();
-
 }
-
-
-// =====================================
-// VỀ TRANG TRƯỚC
-// =====================================
 
 function goBackToMenu() {
-
     if (returnToSearch) {
-
         returnToSearch = false;
-
-        showSearch(
-            false
-        );
-
+        showSearch(false);
         return;
-
     }
-
-
     showMenu();
-
 }
 
 
-// =====================================
-// HOÀN THÀNH
-// =====================================
+/* =====================================
+   HOÀN THÀNH
+===================================== */
 
 function showResult() {
-
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
+    const app = document.getElementById("app");
+    if (!app) return;
 
     app.innerHTML = `
-
         <div class="result-card">
-
-            <div class="result-icon">
-                🎉
-            </div>
-
-
-            <h2>
-                Hoàn thành!
-            </h2>
-
-
-            <p>
-                Bạn đã hoàn thành lượt học.
-            </p>
-
-
-            <button
-                type="button"
-                onclick="showMenu()"
-            >
-
-                VỀ TRANG CHỦ
-
-            </button>
-
+            <div class="result-icon">🎉</div>
+            <h2>Hoàn thành!</h2>
+            <p>Bạn đã hoàn thành lượt học.</p>
+            <button type="button" onclick="showMenu()">VỀ TRANG CHỦ</button>
         </div>
-
     `;
-
 }
 
 
-// =====================================
-// CÂU CHƯA THUỘC
-// =====================================
+/* =====================================
+   CÂU CHƯA THUỘC
+===================================== */
 
 function showNotLearned() {
-
     returnToSearch = false;
+    answeredState = {};
 
+    notLearnedQuestions = questions.filter(q => isNotLearned(q.id));
 
-    notLearnedQuestions =
-        questions.filter(
-            q =>
-                isNotLearned(
-                    q.id
-                )
-        );
-
-
-    if (
-        notLearnedQuestions.length === 0
-    ) {
-
-        const app =
-            document.getElementById(
-                "app"
-            );
-
-
+    if (notLearnedQuestions.length === 0) {
+        const app = document.getElementById("app");
         if (app) {
-
             app.innerHTML = `
-
                 <div class="card empty-state">
-
-                    <div class="empty-icon">
-                        🎉
-                    </div>
-
-
-                    <h2>
-                        Chưa có câu nào
-                    </h2>
-
-
-                    <p>
-
-                        Bạn chưa đánh dấu câu nào
-                        là "Chưa thuộc".
-
-                    </p>
-
-
-                    <button
-                        type="button"
-                        onclick="showMenu()"
-                    >
-
-                        ← VỀ TRANG CHỦ
-
-                    </button>
-
+                    <div class="empty-icon">🎉</div>
+                    <h2>Chưa có câu nào</h2>
+                    <p>Bạn chưa đánh dấu câu nào là "Chưa thuộc".</p>
+                    <button type="button" onclick="showMenu()">← VỀ TRANG CHỦ</button>
                 </div>
-
             `;
-
         }
-
         return;
-
     }
-
 
     let html = `
-
         <div class="page-header">
-
-            <button
-                class="back-button"
-                onclick="showMenu()"
-            >
-
-                ←
-
-            </button>
-
-
+            <button class="back-button" onclick="showMenu()">←</button>
             <div>
-
-                <h2>
-                    📚 CÂU CHƯA THUỘC
-                </h2>
-
-
-                <p>
-                    ${notLearnedQuestions.length} câu
-                </p>
-
+                <h2>📚 CÂU CHƯA THUỘC</h2>
+                <p>${notLearnedQuestions.length} câu</p>
             </div>
-
         </div>
-
-
         <div class="not-learned-list">
-
     `;
 
+    notLearnedQuestions.forEach((q, index) => {
+        html += `
+            <div class="not-learned-item" onclick="startNotLearned(${index})">
+                <div class="not-learned-subject">${escapeHTML(q.mon)}</div>
+                <div class="not-learned-question">${formatText(stripFillBlank(q))}</div>
+            </div>
+        `;
+    });
 
-    notLearnedQuestions.forEach(
-        (
-            q,
-            index
-        ) => {
+    html += `</div>`;
 
-            html += `
-
-                <div
-                    class="not-learned-item"
-                    onclick="startNotLearned(${index})"
-                >
-
-                    <div
-                        class="not-learned-subject"
-                    >
-
-                        ${escapeHTML(
-                            q.mon
-                        )}
-
-                    </div>
-
-
-                    <div
-                        class="not-learned-question"
-                    >
-
-                        ${formatText(
-                            q.question
-                        )}
-
-                    </div>
-
-                </div>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-
-        </div>
-
-    `;
-
-
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (app) {
-
-        app.innerHTML =
-            html;
-
-    }
-
+    const app = document.getElementById("app");
+    if (app) app.innerHTML = html;
 }
 
+/** Cắt bỏ phần "Đáp án:" trong câu hỏi FILL_BLANK để hiển thị gọn */
+function stripFillBlank(q) {
+    const type = getQuestionType(q);
+    if (type !== "FILL_BLANK") return q.question || "";
 
-// =====================================
-// HỌC CÂU CHƯA THUỘC
-// =====================================
+    const text = String(q.question || "");
+    const idx = text.lastIndexOf("Đáp án:");
+    if (idx !== -1) {
+        return text.slice(0, idx).trim();
+    }
+    return text;
+}
 
-function startNotLearned(
-    index
-) {
-
+function startNotLearned(index) {
     returnToSearch = false;
-
-
-    selectedQuestions =
-        notLearnedQuestions;
-
-
-    currentQuestion =
-        index;
-
-
+    selectedQuestions = notLearnedQuestions;
+    currentQuestion = index;
+    answeredState = {};
     showQuestion();
-
 }
 
 
-// =====================================
-// TÌM KIẾM
-// =====================================
+/* =====================================
+   TÌM KIẾM
+===================================== */
 
-function showSearch(
-    resetSearch = true
-) {
-
+function showSearch(resetSearch = true) {
     if (resetSearch) {
-
         searchKeyword = "";
-
         searchResults = [];
-
     }
 
-
-    const app =
-        document.getElementById(
-            "app"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
+    const app = document.getElementById("app");
+    if (!app) return;
 
     app.innerHTML = `
-
         <div class="page-header">
-
-            <button
-                class="back-button"
-                onclick="showMenu()"
-            >
-
-                ←
-
-            </button>
-
-
+            <button class="back-button" onclick="showMenu()">←</button>
             <div>
-
-                <h2>
-                    🔎 TÌM KIẾM
-                </h2>
-
-
-                <p>
-
-                    Tìm trong câu hỏi,
-                    đáp án và giải thích
-
-                </p>
-
+                <h2>🔎 TÌM KIẾM</h2>
+                <p>Tìm trong câu hỏi, đáp án và giải thích</p>
             </div>
-
         </div>
-
-
         <div class="search-box">
-
-            <input
-                id="searchInput"
-                type="search"
-                inputmode="search"
-                enterkeyhint="search"
+            <input id="searchInput" type="search" inputmode="search" enterkeyhint="search"
                 placeholder="Nhập từ khóa..."
-                value="${escapeHTML(
-                    searchKeyword
-                )}"
+                value="${escapeHTML(searchKeyword)}"
                 oninput="performSearch()"
-                autocomplete="off"
-                autocorrect="off"
-                spellcheck="false"
-            >
-
+                autocomplete="off" autocorrect="off" spellcheck="false">
         </div>
-
-
-        <div id="searchResults">
-
-            ${renderSearchResultsHTML()}
-
-        </div>
-
+        <div id="searchResults">${renderSearchResultsHTML()}</div>
     `;
-
 
     if (resetSearch) {
-
-        setTimeout(
-            () => {
-
-                const input =
-                    document.getElementById(
-                        "searchInput"
-                    );
-
-
-                if (input) {
-
-                    input.focus();
-
-                }
-
-            },
-            150
-        );
-
+        setTimeout(() => {
+            const input = document.getElementById("searchInput");
+            if (input) input.focus();
+        }, 150);
     }
-
 }
-
-
-// =====================================
-// HIỂN THỊ KẾT QUẢ TÌM KIẾM
-// =====================================
 
 function renderSearchResultsHTML() {
-
     if (!searchKeyword) {
-
-        return `
-
-            <div class="search-empty">
-
-                Nhập từ khóa để tìm kiếm.
-
-            </div>
-
-        `;
-
+        return `<div class="search-empty">Nhập từ khóa để tìm kiếm.</div>`;
+    }
+    if (searchResults.length === 0) {
+        return `<div class="search-empty">Không tìm thấy câu hỏi.</div>`;
     }
 
+    let html = `<div class="search-count">Tìm thấy ${searchResults.length} câu</div>`;
 
-    if (
-        searchResults.length === 0
-    ) {
-
-        return `
-
-            <div class="search-empty">
-
-                Không tìm thấy câu hỏi.
-
+    searchResults.forEach((q, index) => {
+        html += `
+            <div class="search-result" onclick="openSearchResult(${index})">
+                <div class="search-result-subject">${escapeHTML(q.mon)}</div>
+                <div class="search-result-question">${formatText(stripFillBlank(q))}</div>
             </div>
-
         `;
-
-    }
-
-
-    let html = `
-
-        <div class="search-count">
-
-            Tìm thấy ${searchResults.length} câu
-
-        </div>
-
-    `;
-
-
-    searchResults.forEach(
-        (
-            q,
-            index
-        ) => {
-
-            html += `
-
-                <div
-                    class="search-result"
-                    onclick="openSearchResult(${index})"
-                >
-
-                    <div
-                        class="search-result-subject"
-                    >
-
-                        ${escapeHTML(
-                            q.mon
-                        )}
-
-                    </div>
-
-
-                    <div
-                        class="search-result-question"
-                    >
-
-                        ${formatText(
-                            q.question
-                        )}
-
-                    </div>
-
-                </div>
-
-            `;
-
-        }
-    );
-
+    });
 
     return html;
-
 }
-
-
-// =====================================
-// THỰC HIỆN TÌM KIẾM
-// =====================================
 
 function performSearch() {
+    const input = document.getElementById("searchInput");
+    if (!input) return;
 
-    const input =
-        document.getElementById(
-            "searchInput"
-        );
+    searchKeyword = input.value.trim();
+    const keyword = normalizeText(searchKeyword);
 
+    const results = keyword === ""
+        ? []
+        : questions.filter(q => {
+            const question = normalizeText(q.question || "");
+            const answer = normalizeText(q.answer || "");
+            const explanation = normalizeText(q.explanation || "");
+            return question.includes(keyword)
+                || answer.includes(keyword)
+                || explanation.includes(keyword);
+        });
 
-    if (!input) {
-        return;
-    }
+    searchResults = results;
 
-
-    searchKeyword =
-        input.value.trim();
-
-
-    const keyword =
-        normalizeText(
-            searchKeyword
-        );
-
-
-    const results =
-        keyword === ""
-            ? []
-            : questions.filter(
-                q => {
-
-                    const question =
-                        normalizeText(
-                            q.question
-                        );
-
-
-                    const answer =
-                        normalizeText(
-                            q.answer
-                        );
-
-
-                    const explanation =
-                        normalizeText(
-                            q.explanation
-                        );
-
-
-                    return (
-
-                        question.includes(
-                            keyword
-                        ) ||
-
-                        answer.includes(
-                            keyword
-                        ) ||
-
-                        explanation.includes(
-                            keyword
-                        )
-
-                    );
-
-                }
-            );
-
-
-    searchResults =
-        results;
-
-
-    const container =
-        document.getElementById(
-            "searchResults"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML =
-        renderSearchResultsHTML();
-
+    const container = document.getElementById("searchResults");
+    if (container) container.innerHTML = renderSearchResultsHTML();
 }
 
-
-// =====================================
-// MỞ KẾT QUẢ TÌM KIẾM
-// =====================================
-
-function openSearchResult(
-    index
-) {
-
-    selectedQuestions =
-        searchResults;
-
-
-    currentQuestion =
-        index;
-
-
+function openSearchResult(index) {
+    selectedQuestions = searchResults;
+    currentQuestion = index;
     returnToSearch = true;
-
-
+    answeredState = {};
     showQuestion();
-
 }
 
 
-// =====================================
-// CHUẨN HÓA TÌM KIẾM
-// =====================================
+/* =====================================
+   HELPERS - PARSE
+===================================== */
 
-function normalizeText(
-    text
-) {
+/** Tách choices thành mảng */
+function getChoices(choices) {
+    if (choices === null || choices === undefined) return [];
+    return String(choices)
+        .split(/\r?\n/)
+        .map(c => c.trim())
+        .filter(c => c !== "");
+}
 
-    return String(
-        text ?? ""
-    )
+/** Tách answer FILL_BLANK theo " | " */
+function getFillBlankAnswers(answer) {
+    if (answer === null || answer === undefined) return [];
+    return String(answer)
+        .split("|")
+        .map(a => a.trim())
+        .filter(a => a !== "");
+}
+
+/** Đếm số {{n}} */
+function countPlaceholders(question) {
+    const matches = String(question || "").match(/\{\{\d+\}\}/g);
+    return matches ? matches.length : 0;
+}
+
+
+/* =====================================
+   HELPERS - NORMALIZE / FORMAT
+===================================== */
+
+function normalizeAnswer(text) {
+    return normalizeText(text)
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function normalizeText(text) {
+    return String(text ?? "")
         .toLowerCase()
-        .normalize(
-            "NFD"
-        )
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
-        .replace(
-            /đ/g,
-            "d"
-        );
-
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
 }
 
-
-// =====================================
-// FORMAT TEXT
-// =====================================
-
-function formatText(
-    text
-) {
-
-    if (
-        text === null ||
-        text === undefined
-    ) {
-
-        return "";
-
-    }
-
-
-    return escapeHTML(
-        String(text)
-    ).replace(
-        /\n/g,
-        "<br>"
-    );
-
+function formatText(text) {
+    if (text === null || text === undefined) return "";
+    return escapeHTML(String(text)).replace(/\n/g, "<br>");
 }
 
-
-// =====================================
-// BẢO VỆ HTML
-// =====================================
-
-function escapeHTML(
-    text
-) {
-
+function escapeHTML(text) {
     return String(text)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
