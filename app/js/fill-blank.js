@@ -10,6 +10,8 @@ import {
     startToastCountdown,
     cancelToastCountdown,
     resetToastState,
+    startBorderRunLoop,
+    stopBorderRunLoop,
 } from './toast.js';
 
 
@@ -61,13 +63,21 @@ export function renderFillBlank(q, qState) {
             <div id="fillGiaiThich"></div>
             <div id="autoNotLearned"></div>
         </div>
-        <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước"></div>
-        <div class="tap-zone tap-zone-right" data-tap="next" aria-label="Câu tiếp theo"></div>
+        <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước">
+            <span class="tap-zone-arrow">←</span>
+        </div>
+        <div class="tap-zone tap-zone-right" data-tap="next" aria-label="Câu tiếp theo">
+            <span class="tap-zone-arrow">→</span>
+        </div>
     `;
 
     attachHeaderEvents();
     attachFillBlankInputs(q, qState);
     attachTapZones();
+
+    // Bắt đầu loop chạy chữ quanh viền
+    stopBorderRunLoop();
+    startBorderRunLoop();
 
     if (qState.checked) {
         renderFillBlankExplanation(q, qState);
@@ -96,36 +106,60 @@ function attachTapZones() {
         });
     });
 
-    // Double click trong card → hiện đáp án
+    // Double click trong card → toggle đáp án
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
             // Bỏ qua nếu double click vào input (để user chọn text)
             if (e.target.tagName === "INPUT") return;
             e.stopPropagation();
-            handleDoubleClick();
+            toggleFillBlankReveal();
         });
     }
 }
 
-/**
- * Xử lý double click:
- * - Nếu chưa trả lời → tự điền đáp án đúng
- * - Nếu đã trả lời → cuộn tới phần đáp án
- */
-function handleDoubleClick() {
+
+/* =====================================
+   TOGGLE ĐÁP ÁN (DOUBLE CLICK)
+   - Lần 1: hiện đáp án
+   - Lần 2: ẩn đáp án
+   - Lần 3: hiện lại...
+===================================== */
+
+export function toggleFillBlankReveal() {
     const qState = state.answeredState[state.currentQuestion];
     if (!qState) return;
 
     if (qState.checked) {
-        const dapAnBox = document.getElementById("fillDapAn");
-        if (dapAnBox) {
-            dapAnBox.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        return;
+        hideFillBlankAnswer();
+    } else {
+        autoRevealFillBlank();
     }
+}
 
-    autoRevealFillBlank();
+
+/* =====================================
+   ẨN ĐÁP ÁN — CHO LÀM LẠI
+===================================== */
+
+export function hideFillBlankAnswer() {
+    const q = state.selectedQuestions[state.currentQuestion];
+    const qState = state.answeredState[state.currentQuestion];
+    if (!q || !qState) return;
+
+    // Reset trạng thái
+    qState.checked = false;
+    qState.userAnswers = [];
+    qState.results = [];
+
+    // Render lại câu hỏi (sạch sẽ)
+    renderFillBlank(q, qState);
+
+    // Cuộn lên đầu card
+    const card = document.querySelector(".interactive-card");
+    if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 }
 
 
@@ -459,14 +493,6 @@ export function checkFillBlankAnswer() {
     }
 
     renderFillBlankExplanation(q, qState);
-
-    // Cuộn tới phần đáp án sau khi check
-    setTimeout(() => {
-        const dapAn = document.getElementById("fillDapAn");
-        if (dapAn) {
-            dapAn.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-    }, 100);
 }
 
 
