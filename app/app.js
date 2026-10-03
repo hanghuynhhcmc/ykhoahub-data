@@ -708,50 +708,77 @@ function splitFillBlankQuestion(question) {
 }
 
 /** Sinh HTML cho đoạn trả lời: thay {{n}} bằng input */
+/** ✅ DÙNG DOM API ĐỂ TRÁNH LỖI RENDER HTML */
 function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
     if (!template) return "";
 
+    const container = document.createElement("div");
     const regex = /\{\{(\d+)\}\}/g;
-    let html = "";
     let lastIndex = 0;
     let match;
 
     while ((match = regex.exec(template)) !== null) {
-        html += escapeHTML(template.slice(lastIndex, match.index));
+        // Text trước placeholder
+        const textBefore = template.slice(lastIndex, match.index);
+        if (textBefore) {
+            container.appendChild(document.createTextNode(textBefore));
+        }
 
         const idx = parseInt(match[1], 10) - 1;
         const val = userAnswers[idx] || "";
 
         let inputCls = "fill-blank-inline-input";
-        let statusHTML = "";
+        let isCorrect = false;
 
         if (checked) {
-            const isCorrect = results[idx];
+            isCorrect = results && results[idx];
             inputCls += isCorrect ? " correct-input" : " wrong-input";
-            statusHTML = isCorrect
-                ? '<span class="fill-blank-inline-status fill-status-correct">✓</span>'
-                : '<span class="fill-blank-inline-status fill-status-wrong">✗</span>';
         }
 
-        html += '<span class="fill-blank-inline" data-index="' + idx + '">'
-              + '<input type="text"'
-              + ' class="' + inputCls + '"'
-              + ' data-index="' + idx + '"'
-              + ' value="' + escapeHTML(val) + '"'
-              + ' autocomplete="off"'
-              + ' autocorrect="off"'
-              + ' spellcheck="false"'
-              + (checked ? ' disabled' : '')
-              + '>'
-              + statusHTML
-              + '</span>';
+        // Tạo wrapper span
+        const wrapper = document.createElement("span");
+        wrapper.className = "fill-blank-inline";
+        wrapper.dataset.index = String(idx);
+
+        // Tạo input
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = inputCls;
+        input.dataset.index = String(idx);
+        input.value = val;
+        input.setAttribute("autocomplete", "off");
+        input.setAttribute("autocorrect", "off");
+        input.setAttribute("spellcheck", "false");
+        if (checked) input.disabled = true;
+
+        wrapper.appendChild(input);
+
+        // Tick ✓/✗
+        if (checked) {
+            const status = document.createElement("span");
+            status.className = isCorrect
+                ? "fill-blank-inline-status fill-status-correct"
+                : "fill-blank-inline-status fill-status-wrong";
+            status.textContent = isCorrect ? "✓" : "✗";
+            wrapper.appendChild(status);
+        }
+
+        container.appendChild(wrapper);
 
         lastIndex = match.index + match[0].length;
     }
 
-    html += escapeHTML(template.slice(lastIndex));
+    // Text còn lại sau placeholder cuối
+    const textAfter = template.slice(lastIndex);
+    if (textAfter) {
+        container.appendChild(document.createTextNode(textAfter));
+    }
 
-    return html.replace(/\n/g, "<br>");
+    // Đổi \n thành <br>
+    let html = container.innerHTML;
+    html = html.replace(/\n/g, "<br>");
+
+    return html;
 }
 
 /** Sinh HTML khối ĐÁP ÁN */
@@ -1093,4 +1120,101 @@ function renderSearchResultsHTML() {
         html += `
             <div class="search-result" onclick="openSearchResult(${index})">
                 <div class="search-result-subject">${escapeHTML(q.mon)}</div>
-                <div class="search-result-question">${formatText(stripFillBlank(q))
+                <div class="search-result-question">${formatText(stripFillBlank(q))}</div>
+            </div>
+        `;
+    });
+
+    return html;
+}
+
+function performSearch() {
+    const input = document.getElementById("searchInput");
+    if (!input) return;
+
+    searchKeyword = input.value.trim();
+    const keyword = normalizeText(searchKeyword);
+
+    const results = keyword === ""
+        ? []
+        : questions.filter(q => {
+            const question = normalizeText(q.question || "");
+            const answer = normalizeText(q.answer || "");
+            const explanation = normalizeText(q.explanation || "");
+            return question.includes(keyword)
+                || answer.includes(keyword)
+                || explanation.includes(keyword);
+        });
+
+    searchResults = results;
+
+    const container = document.getElementById("searchResults");
+    if (container) container.innerHTML = renderSearchResultsHTML();
+}
+
+function openSearchResult(index) {
+    selectedQuestions = searchResults;
+    currentQuestion = index;
+    returnToSearch = true;
+    answeredState = {};
+    showQuestion();
+}
+
+
+/* =====================================
+   HELPERS - PARSE
+===================================== */
+
+function getChoices(choices) {
+    if (choices === null || choices === undefined) return [];
+    return String(choices)
+        .split(/\r?\n/)
+        .map(c => c.trim())
+        .filter(c => c !== "");
+}
+
+function getFillBlankAnswers(answer) {
+    if (answer === null || answer === undefined) return [];
+    return String(answer)
+        .split("|")
+        .map(a => a.trim())
+        .filter(a => a !== "");
+}
+
+function countPlaceholders(question) {
+    const matches = String(question || "").match(/\{\{\d+\}\}/g);
+    return matches ? matches.length : 0;
+}
+
+
+/* =====================================
+   HELPERS - NORMALIZE / FORMAT
+===================================== */
+
+function normalizeAnswer(text) {
+    return normalizeText(text)
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function normalizeText(text) {
+    return String(text ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
+}
+
+function formatText(text) {
+    if (text === null || text === undefined) return "";
+    return escapeHTML(String(text)).replace(/\n/g, "<br>");
+}
+
+function escapeHTML(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
