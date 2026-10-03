@@ -21,7 +21,6 @@ import {
 export async function loadQuestions() {
     let data = null;
 
-    // 1. Thử tải online
     try {
         const res = await fetch(ONLINE_DATA_URL + "?t=" + Date.now());
         if (res.ok) {
@@ -34,7 +33,6 @@ export async function loadQuestions() {
         console.warn("Không tải được online, dùng cache:", err);
     }
 
-    // 2. Fallback: dùng cache
     if (!data) {
         try {
             const cached = localStorage.getItem(LOCAL_CACHE_KEY);
@@ -42,12 +40,10 @@ export async function loadQuestions() {
         } catch { /* ignore */ }
     }
 
-    // 3. Không có gì cả
     if (!data) {
         throw new Error("Không có dữ liệu câu hỏi (online + cache đều lỗi).");
     }
 
-    // 4. Chuẩn hóa dữ liệu
     const rawList = Array.isArray(data) ? data : (data.questions || []);
 
     state.questions = rawList
@@ -64,7 +60,6 @@ export async function loadQuestions() {
 
     console.log(`Đã tải ${state.questions.length} câu hỏi hợp lệ.`);
 
-    // 5. Hiển thị menu
     const { showMenu } = await import('./dashboard.js');
     showMenu();
 }
@@ -84,7 +79,7 @@ export function getSubjects() {
 
 
 /* =====================================
-   LEARNED (ĐÃ TỪNG HỌC)
+   LEARNED
 ===================================== */
 
 function getLearnedIds() {
@@ -116,7 +111,7 @@ export function isLearned(id) {
 
 
 /* =====================================
-   NOT LEARNED (CHƯA THUỘC)
+   NOT LEARNED
 ===================================== */
 
 const NOT_LEARNED_KEY = "ykhoahub_not_learned";
@@ -161,15 +156,9 @@ export function getNotLearnedQuestions() {
 
 
 /* =====================================
-   PHÂN LOẠI CÂU HỎI (3 TRẠNG THÁI)
+   PHÂN LOẠI CÂU HỎI
 ===================================== */
 
-/**
- * Trả về trạng thái câu hỏi:
- * - "locked":   Chưa học (🔒)
- * - "review":   Chưa thuộc (📌)
- * - "mastered": Đã thuộc (🏆)
- */
 export function getQuestionStatus(id) {
     const numId = Number(id);
     if (!numId) return "locked";
@@ -179,10 +168,6 @@ export function getQuestionStatus(id) {
     return "mastered";
 }
 
-
-/**
- * Thống kê đầy đủ cho 1 môn (3 trạng thái)
- */
 export function getSubjectStatsFull(subject) {
     const list = state.questions.filter(q => q.mon === subject);
 
@@ -206,10 +191,6 @@ export function getSubjectStatsFull(subject) {
     };
 }
 
-
-/**
- * Alias cho tương thích code cũ
- */
 export function getSubjectStats(subject) {
     const stats = getSubjectStatsFull(subject);
     return {
@@ -220,10 +201,6 @@ export function getSubjectStats(subject) {
     };
 }
 
-
-/**
- * Danh sách câu theo trạng thái
- */
 export function getLockedQuestions() {
     return state.questions.filter(q => getQuestionStatus(q.id) === "locked");
 }
@@ -252,11 +229,6 @@ function escapeHtmlSimple(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-
-
-/* =====================================
-   HELPER: RENDER NHÓM THEO MÔN
-===================================== */
 
 function renderGroupedBySubject(list, icon) {
     if (!list || list.length === 0) return null;
@@ -296,7 +268,7 @@ function renderGroupedBySubject(list, icon) {
 
 
 /* =====================================
-   MÀN HÌNH "CÂU CHƯA THUỘC" (📌)
+   MÀN HÌNH "CÂU CHƯA THUỘC" 📌
 ===================================== */
 
 export function showNotLearned() {
@@ -338,8 +310,7 @@ export function showNotLearned() {
 
     app.querySelectorAll('.not-learned-item').forEach(el => {
         el.addEventListener("click", () => {
-            const idx = Number(el.dataset.index);
-            openNotLearnedAt(idx);
+            openNotLearnedAt(Number(el.dataset.index));
         });
     });
 }
@@ -355,7 +326,7 @@ async function openNotLearnedAt(index) {
 
 
 /* =====================================
-   MÀN HÌNH "CÂU ĐÃ THUỘC" (🏆)
+   MÀN HÌNH "CÂU ĐÃ THUỘC" 🏆
 ===================================== */
 
 export function showMastered() {
@@ -391,7 +362,7 @@ export function showMastered() {
 
 
 /* =====================================
-   MÀN HÌNH "CÂU CHƯA HỌC" (🔒)
+   MÀN HÌNH "CÂU CHƯA HỌC" 🔒
 ===================================== */
 
 export function showLocked() {
