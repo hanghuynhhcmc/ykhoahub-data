@@ -1,9 +1,9 @@
 /* =====================================
-   MCQ - TRẮC NGHIỆM
+   FILL_BLANK - ĐIỀN KHUYẾT
 ===================================== */
 
 import { state } from './state.js';
-import { formatText, normalizeAnswer, getChoices } from './helpers.js';
+import { escapeHTML, formatText, normalizeAnswer, getFillBlankAnswers } from './helpers.js';
 import { markAsNotLearned, isLearned } from './questions.js';
 import { createStudyHeader, attachHeaderEvents } from './study.js';
 import {
@@ -14,61 +14,60 @@ import {
 import {
     startTimer,
     stopTimer,
+    resumeTimer,
     hideTimerWidget,
+    getRemainingTime,
+    getTotalDuration,
     calculateDuration,
 } from './timer.js';
 
 
 /* =====================================
-   CỜ ĐÁNH DẤU KHÔNG RESTART TIMER
-   (Dùng khi ẩn đáp án → không đếm lại)
-===================================== */
-let skipTimerRestart = false;
-
-
-/* =====================================
-   RENDER MÀN HÌNH MCQ
+   RENDER MÀN HÌNH FILL BLANK
 ===================================== */
 
-export function renderMCQ(q, qState) {
+export function renderFillBlank(q, qState) {
     const app = document.getElementById("app");
     if (!app) return;
 
     resetToastState();
 
-    const choices = getChoices(q.choices);
-    const correctAnswer = String(q.answer ?? "").trim();
+    const correctAnswers = getFillBlankAnswers(q.answer);
+    const parts = splitFillBlankQuestion(q.question);
 
-    let choicesHTML = "";
-    choices.forEach((choice, index) => {
-        let cls = "answer-choice";
-        if (qState.checked) {
-            const isCorrectChoice = normalizeAnswer(choice) === normalizeAnswer(correctAnswer);
-            const isSelected = qState.selectedIndex === index;
+    if (!qState.userAnswers || qState.userAnswers.length !== correctAnswers.length) {
+        qState.userAnswers = new Array(correctAnswers.length).fill("");
+    }
 
-            if (isCorrectChoice) cls += " correct";
-            else if (isSelected) cls += " wrong";
-        } else {
-            if (qState.selectedIndex === index) cls += " selected";
-        }
+    const answerHTML = buildFillBlankAnswerHTML(
+        parts.answerTemplate,
+        qState.userAnswers,
+        qState.checked,
+        qState.results
+    );
 
-        choicesHTML += `
-            <button type="button"
-                class="${cls}"
-                data-index="${index}"
-                ${qState.checked ? "disabled" : ""}>
-                <span class="choice-tick"></span>
-                <span class="choice-text">${formatText(choice)}</span>
-            </button>
-        `;
-    });
+    const dapAnHTML = qState.checked
+        ? buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers)
+        : "";
 
     app.innerHTML = `
         ${createStudyHeader(q)}
         <div class="interactive-card">
-            <div class="mcq-question-text">${formatText(q.question)}</div>
-            <div id="mcqChoices" class="answer-choices">${choicesHTML}</div>
-            <div id="mcqExplanation"></div>
+
+            <div class="fill-blank-cau-hoi">
+                <div class="card-label">CÂU HỎI</div>
+                <div class="fill-blank-cau-hoi-text">${parts.questionPart}</div>
+            </div>
+
+            <div class="fill-blank-tra-loi">
+                <div class="card-label">TRẢ LỜI</div>
+                <div class="fill-blank-tra-loi-text" id="fillBlankAnswerArea">
+                    ${answerHTML}
+                </div>
+            </div>
+
+            <div id="fillDapAn">${dapAnHTML}</div>
+            <div id="fillGiaiThich"></div>
             <div id="autoNotLearned"></div>
         </div>
         <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước">
@@ -80,30 +79,29 @@ export function renderMCQ(q, qState) {
     `;
 
     attachHeaderEvents();
+    attachFillBlankInputs(q, qState);
     attachTapZones();
-    attachChoiceEvents();
 
-    // Xử lý timer
+    // ===== XỬ LÝ TIMER =====
     if (qState.checked) {
-        // Đã trả lời → không có timer
         stopTimer();
         hideTimerWidget();
-    } else if (skipTimerRestart) {
-        // Vừa ẩn đáp án → không đếm lại
-        stopTimer();
-        hideTimerWidget();
-        skipTimerRestart = false;  // Reset cờ
+    } else if (qState.savedTimeLeft !== undefined && qState.savedTotalDuration !== undefined) {
+        // Có thời gian đã lưu → tiếp tục
+        resumeTimer(qState.savedTimeLeft, qState.savedTotalDuration, () => {
+            autoRevealFillBlank();
+        });
     } else {
-        // Bình thường → đếm ngược
-        const choicesText = choices.join(" ");
-        const duration = calculateDuration(q.question, "MCQ", choicesText);
+        // Câu mới → đếm từ đầu (25s cố định)
+        const duration = calculateDuration(q.question, "FILL_BLANK");
         startTimer(duration, () => {
-            autoRevealMCQ();
+            autoRevealFillBlank();
         });
     }
 
     if (qState.checked) {
-        renderMCQExplanation(q, qState);
+        renderFillBlankExplanation(q, qState);
+        lockFillBlankInputs();
     } else {
         maybeStartToastCountdown(q);
     }
@@ -130,20 +128,11 @@ function attachTapZones() {
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
-            if (e.target.closest(".answer-choice")) return;
+            if (e.target.tagName === "INPUT") return;
             e.stopPropagation();
-            toggleMCQReveal();
+            toggleFillBlankReveal();
         });
     }
-}
-
-function attachChoiceEvents() {
-    document.querySelectorAll(".answer-choice").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            selectMCQAnswer(Number(btn.dataset.index));
-        });
-    });
 }
 
 
@@ -151,35 +140,35 @@ function attachChoiceEvents() {
    TOGGLE ĐÁP ÁN (DOUBLE CLICK)
 ===================================== */
 
-export function toggleMCQReveal() {
+export function toggleFillBlankReveal() {
     const qState = state.answeredState[state.currentQuestion];
     if (!qState) return;
 
     if (qState.checked) {
-        hideMCQAnswer();
+        hideFillBlankAnswer();
     } else {
-        autoRevealMCQ();
+        autoRevealFillBlank();
     }
 }
 
 
 /* =====================================
-   ẨN ĐÁP ÁN — KHÔNG ĐẾM LẠI
+   ẨN ĐÁP ÁN — TIẾP TỤC ĐẾM NGƯỢC
 ===================================== */
 
-export function hideMCQAnswer() {
+export function hideFillBlankAnswer() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState) return;
 
-    // Đánh dấu: render tới KHÔNG start timer
-    skipTimerRestart = true;
-
+    // Reset trạng thái trả lời
     qState.checked = false;
-    qState.selectedIndex = null;
-    qState.isCorrect = false;
+    qState.userAnswers = [];
+    qState.results = [];
 
-    renderMCQ(q, qState);
+    // savedTimeLeft đã lưu → render lại sẽ resumeTimer
+
+    renderFillBlank(q, qState);
 
     const card = document.querySelector(".interactive-card");
     if (card) {
@@ -201,51 +190,277 @@ function maybeStartToastCountdown(q) {
 
 
 /* =====================================
-   CHỌN ĐÁP ÁN
+   TÁCH CÂU HỎI THÀNH 2 PHẦN
 ===================================== */
 
-export function selectMCQAnswer(index) {
-    const qState = state.answeredState[state.currentQuestion];
-    if (!qState || qState.checked) return;
+export function splitFillBlankQuestion(question) {
+    const text = String(question ?? "");
 
-    cancelToastCountdown();
-    stopTimer();
+    const dapAnRegex = /Đáp\s*án\s*:/i;
+    const match = text.match(dapAnRegex);
 
-    qState.selectedIndex = index;
+    if (!match) {
+        return {
+            questionPart: formatText(text.trim()),
+            answerTemplate: "",
+        };
+    }
 
-    document.querySelectorAll(".answer-choice").forEach((btn, i) => {
-        btn.classList.toggle("selected", i === index);
-    });
+    const dapAnIdx = match.index;
+    const afterDapAn = dapAnIdx + match[0].length;
 
-    setTimeout(() => {
-        checkMCQAnswer();
-    }, 250);
+    let questionPartRaw = text.slice(0, dapAnIdx).trim();
+    let answerTemplate = text.slice(afterDapAn).trim();
+
+    if (!questionPartRaw) {
+        questionPartRaw = "Điền vào chỗ trống:";
+    }
+
+    return {
+        questionPart: formatText(questionPartRaw),
+        answerTemplate: answerTemplate,
+    };
 }
 
 
 /* =====================================
-   TỰ ĐỘNG CHỌN ĐÁP ÁN ĐÚNG
+   BUILD HTML - PHẦN TRẢ LỜI (INPUT)
 ===================================== */
 
-export function autoRevealMCQ() {
+export function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
+    if (!template) return "";
+
+    const container = document.createElement("div");
+    const regex = /\{\{(\d+)\}\}/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(template)) !== null) {
+        const textBefore = template.slice(lastIndex, match.index);
+        if (textBefore) {
+            container.appendChild(document.createTextNode(textBefore));
+        }
+
+        const idx = parseInt(match[1], 10) - 1;
+        const val = userAnswers[idx] || "";
+
+        let inputCls = "fill-blank-inline-input";
+        let isCorrect = false;
+
+        if (checked) {
+            isCorrect = results && results[idx];
+            inputCls += isCorrect ? " correct-input" : " wrong-input";
+        }
+
+        const wrapper = document.createElement("span");
+        wrapper.className = "fill-blank-inline";
+        wrapper.dataset.index = String(idx);
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = inputCls;
+        input.dataset.index = String(idx);
+        input.value = val;
+        input.setAttribute("autocomplete", "off");
+        input.setAttribute("autocorrect", "off");
+        input.setAttribute("spellcheck", "false");
+        if (checked) input.disabled = true;
+
+        wrapper.appendChild(input);
+
+        if (checked) {
+            const status = document.createElement("span");
+            status.className = isCorrect
+                ? "fill-blank-inline-status fill-status-correct"
+                : "fill-blank-inline-status fill-status-wrong";
+            status.textContent = isCorrect ? "✓" : "✗";
+            wrapper.appendChild(status);
+        }
+
+        container.appendChild(wrapper);
+
+        lastIndex = match.index + match[0].length;
+    }
+
+    const textAfter = template.slice(lastIndex);
+    if (textAfter) {
+        container.appendChild(document.createTextNode(textAfter));
+    }
+
+    let html = container.innerHTML;
+    html = html.replace(/\n/g, "<br>");
+
+    return html;
+}
+
+
+/* =====================================
+   BUILD HTML - PHẦN ĐÁP ÁN
+===================================== */
+
+export function buildFillBlankDapAnHTML(template, correctAnswers) {
+    if (!template) return "";
+
+    const regex = /\{\{(\d+)\}\}/g;
+    let html = "";
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(template)) !== null) {
+        html += escapeHTML(template.slice(lastIndex, match.index));
+        const idx = parseInt(match[1], 10) - 1;
+        const val = correctAnswers[idx] || "";
+        html += `<span class="answer-highlight">${escapeHTML(val)}</span>`;
+        lastIndex = match.index + match[0].length;
+    }
+
+    html += escapeHTML(template.slice(lastIndex));
+    html = html.replace(/\n/g, "<br>");
+
+    return `
+        <div class="fill-dap-an">
+            <div class="explanation-title">ĐÁP ÁN</div>
+            <div>${html}</div>
+        </div>
+    `;
+}
+
+
+/* =====================================
+   GẮN SỰ KIỆN CHO INPUT
+===================================== */
+
+export function attachFillBlankInputs(q, qState) {
+    const inputs = document.querySelectorAll(".fill-blank-inline-input");
+    if (!inputs.length) return;
+
+    inputs.forEach(input => {
+        autoSizeInput(input);
+
+        input.addEventListener("input", (e) => {
+            cancelToastCountdown();
+            autoSizeInput(e.target);
+
+            const idx = Number(e.target.dataset.index);
+            qState.userAnswers[idx] = e.target.value;
+        });
+
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (!qState.checked && hasAnyInput(qState.userAnswers)) {
+                    cancelToastCountdown();
+                    checkFillBlankAnswer();
+                }
+            }
+        });
+
+        input.addEventListener("blur", () => {
+            if (qState.checked) return;
+
+            const allFilled = qState.userAnswers.every(
+                v => String(v || "").trim() !== ""
+            );
+
+            if (allFilled) {
+                cancelToastCountdown();
+                setTimeout(() => {
+                    if (!qState.checked) checkFillBlankAnswer();
+                }, 200);
+            }
+        });
+    });
+}
+
+
+/* =====================================
+   TỰ ĐỘNG GIÃN INPUT
+===================================== */
+
+export function autoSizeInput(input) {
+    if (!input) return;
+
+    if (window.CSS && CSS.supports && CSS.supports("field-sizing", "content")) {
+        return;
+    }
+
+    const span = document.createElement("span");
+    const style = window.getComputedStyle(input);
+
+    span.style.position = "absolute";
+    span.style.visibility = "hidden";
+    span.style.whiteSpace = "pre";
+    span.style.fontFamily = style.fontFamily;
+    span.style.fontSize = style.fontSize;
+    span.style.fontWeight = style.fontWeight;
+    span.style.letterSpacing = style.letterSpacing;
+    span.style.padding = "0";
+    span.style.border = "0";
+
+    span.textContent = input.value || " ";
+
+    document.body.appendChild(span);
+    const textWidth = span.offsetWidth;
+    document.body.removeChild(span);
+
+    const width = Math.min(Math.max(textWidth + 30, 80), 500);
+    input.style.width = width + "px";
+}
+
+
+/* =====================================
+   HELPERS
+===================================== */
+
+export function hasAnyInput(arr) {
+    if (!arr || !arr.length) return false;
+    return arr.some(v => String(v || "").trim() !== "");
+}
+
+export function lockFillBlankInputs() {
+    document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
+        inp.disabled = true;
+    });
+}
+
+
+/* =====================================
+   LƯU THỜI GIAN HIỆN TẠI VÀO qState
+===================================== */
+
+function saveCurrentTime(qState) {
+    if (qState.savedTimeLeft === undefined) {
+        qState.savedTimeLeft = getRemainingTime();
+        qState.savedTotalDuration = getTotalDuration();
+    }
+}
+
+
+/* =====================================
+   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG
+===================================== */
+
+export function autoRevealFillBlank() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState) return;
 
     cancelToastCountdown();
+
+    saveCurrentTime(qState);
     stopTimer();
 
-    const choices = getChoices(q.choices);
-    const correctAnswer = String(q.answer ?? "").trim();
+    const correctAnswers = getFillBlankAnswers(q.answer);
 
-    const correctIndex = choices.findIndex(
-        c => normalizeAnswer(c) === normalizeAnswer(correctAnswer)
-    );
+    qState.userAnswers = correctAnswers.slice();
 
-    if (correctIndex === -1) return;
+    document.querySelectorAll(".fill-blank-inline-input").forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        inp.value = qState.userAnswers[idx] || "";
+        autoSizeInput(inp);
+    });
 
-    qState.selectedIndex = correctIndex;
-    checkMCQAnswer();
+    checkFillBlankAnswer();
 }
 
 
@@ -253,46 +468,63 @@ export function autoRevealMCQ() {
    KIỂM TRA ĐÁP ÁN
 ===================================== */
 
-export function checkMCQAnswer() {
+export function checkFillBlankAnswer() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState || qState.checked) return;
 
+    saveCurrentTime(qState);
     stopTimer();
 
-    const choices = getChoices(q.choices);
-    const correctAnswer = String(q.answer ?? "").trim();
-    const selectedAnswer = choices[qState.selectedIndex];
+    const correctAnswers = getFillBlankAnswers(q.answer);
+    const inputs = document.querySelectorAll(".fill-blank-inline-input");
 
-    const isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(correctAnswer);
-    qState.isCorrect = isCorrect;
+    inputs.forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        qState.userAnswers[idx] = inp.value;
+    });
+
+    qState.results = correctAnswers.map((ans, i) => {
+        const user = qState.userAnswers[i] || "";
+        return normalizeAnswer(user) === normalizeAnswer(ans);
+    });
+
     qState.checked = true;
 
-    document.querySelectorAll(".answer-choice").forEach((btn, i) => {
-        btn.disabled = true;
-        btn.classList.remove("selected");
+    if (qState.results.some(r => !r)) {
+        if (!qState.markedNotLearned) {
+            markAsNotLearned(q.id);
+            qState.markedNotLearned = true;
+        }
+    }
 
-        const choice = choices[i];
-        if (normalizeAnswer(choice) === normalizeAnswer(correctAnswer)) {
-            btn.classList.add("correct");
-        } else if (i === qState.selectedIndex) {
-            btn.classList.add("wrong");
+    inputs.forEach(inp => {
+        const idx = Number(inp.dataset.index);
+        inp.disabled = true;
+        inp.classList.remove("correct-input", "wrong-input");
+        inp.classList.add(qState.results[idx] ? "correct-input" : "wrong-input");
+
+        const wrapper = inp.closest(".fill-blank-inline");
+        if (wrapper) {
+            const oldStatus = wrapper.querySelector(".fill-blank-inline-status");
+            if (oldStatus) oldStatus.remove();
+
+            const status = document.createElement("span");
+            status.className = qState.results[idx]
+                ? "fill-blank-inline-status fill-status-correct"
+                : "fill-blank-inline-status fill-status-wrong";
+            status.textContent = qState.results[idx] ? "✓" : "✗";
+            wrapper.appendChild(status);
         }
     });
 
-    if (!isCorrect && !qState.markedNotLearned) {
-        markAsNotLearned(q.id);
-        qState.markedNotLearned = true;
+    const parts = splitFillBlankQuestion(q.question);
+    const dapAnBox = document.getElementById("fillDapAn");
+    if (dapAnBox) {
+        dapAnBox.innerHTML = buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers);
     }
 
-    renderMCQExplanation(q, qState);
-
-    setTimeout(() => {
-        const exp = document.getElementById("mcqExplanation");
-        if (exp) {
-            exp.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-    }, 100);
+    renderFillBlankExplanation(q, qState);
 }
 
 
@@ -300,22 +532,24 @@ export function checkMCQAnswer() {
    RENDER GIẢI THÍCH
 ===================================== */
 
-export function renderMCQExplanation(q, qState) {
-    const expBox = document.getElementById("mcqExplanation");
+export function renderFillBlankExplanation(q, qState) {
+    const expBox = document.getElementById("fillGiaiThich");
     const noteBox = document.getElementById("autoNotLearned");
-    if (!expBox) return;
 
-    expBox.innerHTML = `
-        <div class="explanation-section">
-            <div class="explanation-title">GIẢI THÍCH</div>
-            <div class="feedback-explanation">
-                ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
+    if (expBox) {
+        expBox.innerHTML = `
+            <div class="explanation-section fill-giai-thich">
+                <div class="explanation-title">GIẢI THÍCH</div>
+                <div class="feedback-explanation">
+                    ${q.explanation ? formatText(q.explanation) : "Không có giải thích cho câu này."}
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
 
     if (noteBox) {
-        if (!qState.isCorrect && qState.markedNotLearned) {
+        const hasWrong = qState.results && qState.results.some(r => !r);
+        if (hasWrong && qState.markedNotLearned) {
             noteBox.innerHTML = `
                 <div class="auto-not-learned-note">
                     📌 Câu này đã được thêm vào danh sách Chưa thuộc

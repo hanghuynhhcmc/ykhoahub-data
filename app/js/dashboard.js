@@ -5,7 +5,13 @@
 import { DASHBOARD_KEY } from './config.js';
 import { state } from './state.js';
 import { escapeHTML } from './helpers.js';
-import { getSubjects, getSubjectStats, showNotLearned } from './questions.js';
+import {
+    getSubjects,
+    getSubjectStatsFull,
+    showMastered,
+    showNotLearned,
+    showLocked,
+} from './questions.js';
 import { signOut } from './auth.js';
 
 
@@ -77,6 +83,65 @@ function handleLogout() {
 
 
 /* =====================================
+   TÍNH % HOÀN THÀNH
+===================================== */
+
+function calcProgress(stats) {
+    if (!stats || stats.total === 0) return 0;
+    return Math.round((stats.mastered / stats.total) * 100);
+}
+
+function getProgressClass(percent) {
+    if (percent >= 80) return "high";
+    if (percent >= 40) return "medium";
+    return "low";
+}
+
+
+/* =====================================
+   RENDER CARD MÔN HỌC
+===================================== */
+
+function renderSubjectCard(subject) {
+    const stats = getSubjectStatsFull(subject);
+    const percent = calcProgress(stats);
+    const progressClass = getProgressClass(percent);
+
+    return `
+        <div class="subject-progress" data-subject="${escapeHTML(subject)}">
+            <button class="dashboard-remove" data-remove="${escapeHTML(subject)}" aria-label="Xóa">×</button>
+
+            <div class="subject-name">${escapeHTML(subject)}</div>
+
+            <div class="subject-progress-bar">
+                <div class="subject-progress-fill ${progressClass}"
+                     style="width: ${percent}%"></div>
+            </div>
+
+            <div class="subject-percent ${progressClass}">
+                🏆 ${percent}% đã thuộc
+            </div>
+
+            <div class="progress-stats">
+                <div class="stat-item mastered">
+                    <span class="stat-icon">🏆</span>
+                    <span class="stat-value">${stats.mastered}</span>
+                </div>
+                <div class="stat-item review">
+                    <span class="stat-icon">📌</span>
+                    <span class="stat-value">${stats.review}</span>
+                </div>
+                <div class="stat-item locked">
+                    <span class="stat-icon">🔒</span>
+                    <span class="stat-value">${stats.locked}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
+/* =====================================
    TRANG CHỦ
 ===================================== */
 
@@ -94,16 +159,7 @@ export function showMenu() {
         const subject = dashboardSubjects[i];
 
         if (subject) {
-            const stats = getSubjectStats(subject);
-            dashboardHTML += `
-                <div class="subject-progress" data-subject="${escapeHTML(subject)}">
-                    <button class="dashboard-remove" data-remove="${escapeHTML(subject)}">×</button>
-                    <div class="subject-name">${escapeHTML(subject)}</div>
-                    <div class="progress-item"><span>Đã học</span><strong>${stats.learned}</strong></div>
-                    <div class="progress-item"><span>Chưa thuộc</span><strong>${stats.review}</strong></div>
-                    <div class="progress-item"><span>Còn lại</span><strong>${stats.remaining}</strong></div>
-                </div>
-            `;
+            dashboardHTML += renderSubjectCard(subject);
         } else {
             let options = `<option value="">+ THÊM MÔN HỌC</option>`;
             availableSubjects.forEach(item => {
@@ -111,6 +167,7 @@ export function showMenu() {
             });
             dashboardHTML += `
                 <div class="dashboard-empty">
+                    <div class="empty-icon">+</div>
                     <select class="dashboard-add-select">
                         ${options}
                     </select>
@@ -160,15 +217,43 @@ export function showMenu() {
         `;
     }
 
+    // Đếm số câu mỗi trạng thái (toàn bộ, không theo môn)
+    let totalMastered = 0;
+    let totalReview = 0;
+    let totalLocked = 0;
+    subjects.forEach(s => {
+        const stats = getSubjectStatsFull(s);
+        totalMastered += stats.mastered;
+        totalReview += stats.review;
+        totalLocked += stats.locked;
+    });
+
     app.innerHTML = `
         ${userBarHTML}
+
         <div class="section-heading">MÔN ĐANG HỌC</div>
         <div class="dashboard-grid">${dashboardHTML}</div>
+
         <div class="menu-section">
-            <button class="menu-button secondary" data-action="show-not-learned">
-                📚 CÂU CHƯA THUỘC
+            <button class="menu-button menu-mastered" data-action="show-mastered">
+                <span class="menu-icon">🏆</span>
+                <span class="menu-label">CÂU ĐÃ THUỘC</span>
+                <span class="menu-badge">${totalMastered}</span>
+            </button>
+
+            <button class="menu-button menu-review" data-action="show-not-learned">
+                <span class="menu-icon">📌</span>
+                <span class="menu-label">CÂU CHƯA THUỘC</span>
+                <span class="menu-badge">${totalReview}</span>
+            </button>
+
+            <button class="menu-button menu-locked" data-action="show-locked">
+                <span class="menu-icon">🔒</span>
+                <span class="menu-label">CÂU CHƯA HỌC</span>
+                <span class="menu-badge">${totalLocked}</span>
             </button>
         </div>
+
         <div class="search-home-section">
             <button class="menu-button search-home-button" data-action="show-search">
                 🔎 TÌM KIẾM
@@ -179,8 +264,14 @@ export function showMenu() {
     const logoutBtn = app.querySelector('[data-action="logout"]');
     if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
 
+    app.querySelector('[data-action="show-mastered"]')
+        .addEventListener("click", showMastered);
+
     app.querySelector('[data-action="show-not-learned"]')
         .addEventListener("click", showNotLearned);
+
+    app.querySelector('[data-action="show-locked"]')
+        .addEventListener("click", showLocked);
 
     app.querySelector('[data-action="show-search"]')
         .addEventListener("click", () => {

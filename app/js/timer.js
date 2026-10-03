@@ -6,6 +6,9 @@ const WARNING_THRESHOLD = 8;        // Cảnh báo đỏ khi còn ≤ 8s
 const EXPLOSION_DELAY = 300;        // Đợi 300ms sau khi nổ mới gọi callback
 const TICK_INTERVAL = 1000;         // 1 giây / tick
 
+// Thời gian cố định cho fill-blank
+const FILL_BLANK_DURATION = 25;
+
 let countdownInterval = null;
 let timeLeft = 0;
 let totalDuration = 0;
@@ -20,18 +23,7 @@ let onTimeUpCallback = null;
 function countWords(text) {
     const str = String(text || "").trim();
     if (!str) return 0;
-    // Tách theo khoảng trắng (1 hoặc nhiều)
     return str.split(/\s+/).filter(w => w.length > 0).length;
-}
-
-
-/* =====================================
-   ĐẾM SỐ Ô ĐIỀN TRONG CÂU (FILL_BLANK)
-===================================== */
-
-function countFillBlanks(question) {
-    const matches = String(question || "").match(/\{\{\d+\}\}/g);
-    return matches ? matches.length : 0;
 }
 
 
@@ -39,42 +31,58 @@ function countFillBlanks(question) {
    TÍNH THỜI GIAN THEO ĐỘ DÀI CÂU HỎI
 ===================================== */
 
-/**
- * Tính thời gian làm bài dựa trên số từ + số ô điền
- * @param {string} question - Nội dung câu hỏi
- * @param {string} type - "MCQ" hoặc "FILL_BLANK"
- * @param {number} choicesText - Text của các đáp án MCQ (để đếm từ)
- * @returns {number} - Số giây
- */
 export function calculateDuration(question, type = "MCQ", choicesText = "") {
     if (type === "MCQ") {
-        // MCQ:
-        // - 4s cơ bản (đọc lướt + chọn)
-        // - +0.6s cho mỗi từ trong câu hỏi
-        // - +0.4s cho mỗi từ trong đáp án
-        // - Tối thiểu 8s, tối đa 20s
+        // MCQ: 4s + 0.6s/từ câu hỏi + 0.4s/từ đáp án
+        // Min 8s, Max 20s
         const questionWords = countWords(question);
         const choiceWords = countWords(choicesText);
-
         const duration = 4 + questionWords * 0.6 + choiceWords * 0.4;
         return Math.round(Math.max(8, Math.min(20, duration)));
     }
 
-    // FILL_BLANK:
-    // - 4s cơ bản
-    // - +0.6s cho mỗi từ trong câu hỏi
-    // - +3s cho mỗi ô điền (vì phải suy nghĩ + gõ)
-    // - Tối thiểu 10s, tối đa 30s
-    const questionWords = countWords(question);
-    const blanks = countFillBlanks(question);
-
-    const duration = 4 + questionWords * 0.6 + blanks * 3;
-    return Math.round(Math.max(10, Math.min(30, duration)));
+    // FILL_BLANK: cố định 25s
+    return FILL_BLANK_DURATION;
 }
 
 
 /* =====================================
-   BẮT ĐẦU ĐẾM NGƯỢC
+   INTERNAL: CHẠY INTERVAL ĐẾM NGƯỢC
+===================================== */
+
+function runInterval() {
+    countdownInterval = setInterval(() => {
+        timeLeft--;
+        updateBombDisplay();
+
+        if (timeLeft <= 0) {
+            const callback = onTimeUpCallback;
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            isRunning = false;
+            onTimeUpCallback = null;
+
+            triggerExplosion();
+
+            if (typeof callback === 'function') {
+                setTimeout(() => {
+                    try {
+                        callback();
+                    } catch (err) {
+                        console.error("Timer callback error:", err);
+                    }
+                }, EXPLOSION_DELAY);
+            }
+        }
+    }, TICK_INTERVAL);
+}
+
+
+/* =====================================
+   BẮT ĐẦU ĐẾM NGƯỢC (từ đầu)
 ===================================== */
 
 export function startTimer(duration, onTimeUp = null) {
@@ -88,36 +96,30 @@ export function startTimer(duration, onTimeUp = null) {
     renderBombWidget();
     updateBombDisplay();
 
-    countdownInterval = setInterval(() => {
-        timeLeft--;
-        updateBombDisplay();
+    runInterval();
+}
 
-        if (timeLeft <= 0) {
-            // ⚠️ LƯU CALLBACK TRƯỚC KHI RESET
-            const callback = onTimeUpCallback;
 
-            // Dừng interval (không gọi stopTimer vì nó reset callback)
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            isRunning = false;
-            onTimeUpCallback = null;
+/* =====================================
+   TIẾP TỤC ĐẾM NGƯỢC (từ giây đã lưu)
+===================================== */
 
-            triggerExplosion();
+export function resumeTimer(savedTimeLeft, savedTotalDuration, onTimeUp = null) {
+    // Reset interval cũ
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
 
-            // Gọi callback sau khi bom nổ xong
-            if (typeof callback === 'function') {
-                setTimeout(() => {
-                    try {
-                        callback();
-                    } catch (err) {
-                        console.error("Timer callback error:", err);
-                    }
-                }, EXPLOSION_DELAY);
-            }
-        }
-    }, TICK_INTERVAL);
+    timeLeft = savedTimeLeft;
+    totalDuration = savedTotalDuration;
+    isRunning = true;
+    onTimeUpCallback = onTimeUp;
+
+    renderBombWidget();
+    updateBombDisplay();
+
+    runInterval();
 }
 
 
@@ -226,10 +228,15 @@ export function isTimerRunning() {
     return isRunning;
 }
 
-export function getTimeLeft() {
+export function getRemainingTime() {
     return timeLeft;
 }
 
 export function getTotalDuration() {
     return totalDuration;
+}
+
+// Alias
+export function getTimeLeft() {
+    return timeLeft;
 }

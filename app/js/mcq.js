@@ -14,16 +14,12 @@ import {
 import {
     startTimer,
     stopTimer,
+    resumeTimer,
     hideTimerWidget,
+    getRemainingTime,
+    getTotalDuration,
     calculateDuration,
 } from './timer.js';
-
-
-/* =====================================
-   CỜ ĐÁNH DẤU KHÔNG RESTART TIMER
-   (Dùng khi ẩn đáp án → không đếm lại)
-===================================== */
-let skipTimerRestart = false;
 
 
 /* =====================================
@@ -83,18 +79,18 @@ export function renderMCQ(q, qState) {
     attachTapZones();
     attachChoiceEvents();
 
-    // Xử lý timer
+    // ===== XỬ LÝ TIMER =====
     if (qState.checked) {
-        // Đã trả lời → không có timer
+        // Đã trả lời → ẩn timer
         stopTimer();
         hideTimerWidget();
-    } else if (skipTimerRestart) {
-        // Vừa ẩn đáp án → không đếm lại
-        stopTimer();
-        hideTimerWidget();
-        skipTimerRestart = false;  // Reset cờ
+    } else if (qState.savedTimeLeft !== undefined && qState.savedTotalDuration !== undefined) {
+        // Có thời gian đã lưu → tiếp tục đếm từ đó
+        resumeTimer(qState.savedTimeLeft, qState.savedTotalDuration, () => {
+            autoRevealMCQ();
+        });
     } else {
-        // Bình thường → đếm ngược
+        // Câu mới → đếm từ đầu
         const choicesText = choices.join(" ");
         const duration = calculateDuration(q.question, "MCQ", choicesText);
         startTimer(duration, () => {
@@ -164,7 +160,7 @@ export function toggleMCQReveal() {
 
 
 /* =====================================
-   ẨN ĐÁP ÁN — KHÔNG ĐẾM LẠI
+   ẨN ĐÁP ÁN — TIẾP TỤC ĐẾM NGƯỢC
 ===================================== */
 
 export function hideMCQAnswer() {
@@ -172,12 +168,13 @@ export function hideMCQAnswer() {
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState) return;
 
-    // Đánh dấu: render tới KHÔNG start timer
-    skipTimerRestart = true;
-
+    // Reset trạng thái trả lời
     qState.checked = false;
     qState.selectedIndex = null;
     qState.isCorrect = false;
+
+    // savedTimeLeft đã được lưu trong autoRevealMCQ
+    // → render lại sẽ resumeTimer
 
     renderMCQ(q, qState);
 
@@ -201,6 +198,19 @@ function maybeStartToastCountdown(q) {
 
 
 /* =====================================
+   LƯU THỜI GIAN HIỆN TẠI VÀO qState
+===================================== */
+
+function saveCurrentTime(qState) {
+    // Chỉ lưu lần đầu (không ghi đè)
+    if (qState.savedTimeLeft === undefined) {
+        qState.savedTimeLeft = getRemainingTime();
+        qState.savedTotalDuration = getTotalDuration();
+    }
+}
+
+
+/* =====================================
    CHỌN ĐÁP ÁN
 ===================================== */
 
@@ -209,6 +219,8 @@ export function selectMCQAnswer(index) {
     if (!qState || qState.checked) return;
 
     cancelToastCountdown();
+
+    saveCurrentTime(qState);
     stopTimer();
 
     qState.selectedIndex = index;
@@ -233,6 +245,8 @@ export function autoRevealMCQ() {
     if (!q || !qState) return;
 
     cancelToastCountdown();
+
+    saveCurrentTime(qState);
     stopTimer();
 
     const choices = getChoices(q.choices);
@@ -258,6 +272,7 @@ export function checkMCQAnswer() {
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState || qState.checked) return;
 
+    saveCurrentTime(qState);
     stopTimer();
 
     const choices = getChoices(q.choices);
