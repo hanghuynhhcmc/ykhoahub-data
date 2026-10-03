@@ -183,7 +183,6 @@ export async function doSignup() {
     }
 
     if (data.session) {
-        // Đăng nhập luôn (khi đã tắt Confirm email)
         state.currentUser = data.user;
         state.isGuest = false;
         loadQuestions();
