@@ -1,88 +1,12 @@
 /* =====================================
-   PAGE HEADER
-===================================== */
-.page-header {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    min-width: 0;
-}
-
-.page-header > div { min-width: 0; }
-
-.page-header h2 {
-    margin: 0;
-    font-size: 19px;
-    font-weight: 800;
-    color: #0f172a;
-    overflow-wrap: anywhere;
-}
-
-.page-header p {
-    margin: 4px 0 0;
-    color: #64748b;
-    font-size: 13px;
-    overflow-wrap: anywhere;
-}
-
-
-/* =====================================
-   NOT LEARNED LIST
-===================================== */
-.not-learned-list {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.not-learned-item {
-    width: 100%;
-    min-width: 0;
-    padding: 16px 18px;
-    background: #ffffff;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 14px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.not-learned-item:hover {
-    border-color: #fca5a5;
-    background: #fef2f2;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px -6px rgba(239, 68, 68, 0.15);
-}
-
-.not-learned-subject {
-    display: inline-block;
-    margin-bottom: 8px;
-    padding: 3px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #1d4ed8;
-    background: #eff6ff;
-    border-radius: 6px;
-    overflow-wrap: anywhere;
-}
-
-.not-learned-question {
-    line-height: 1.55;
-    color: #334155;
-    font-size: 14.5px;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-
-/* =====================================
    SEARCH
 ===================================== */
 .search-box {
     width: 100%;
     margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .search-box input {
@@ -102,148 +26,33 @@
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
 }
 
-.search-count {
-    margin-bottom: 12px;
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.search-result {
+.search-subject-filter {
     width: 100%;
-    min-width: 0;
-    padding: 16px 18px;
-    margin-bottom: 10px;
-    background: #ffffff;
+    height: 48px;
+    padding: 0 16px;
     border: 1.5px solid #e2e8f0;
     border-radius: 14px;
+    background: #ffffff;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 18px;
+    padding-right: 42px;
 }
 
-.search-result:hover {
+.search-subject-filter:hover {
     border-color: #93c5fd;
-    background: #f0f9ff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px -6px rgba(37, 99, 235, 0.15);
 }
 
-.search-result-subject {
-    display: inline-block;
-    margin-bottom: 8px;
-    padding: 3px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #1d4ed8;
-    background: #eff6ff;
-    border-radius: 6px;
-    overflow-wrap: anywhere;
-}
-
-.search-result-question {
-    line-height: 1.55;
-    color: #334155;
-    font-size: 14.5px;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.search-empty {
-    padding: 40px 20px;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 14px;
-}
-
-
-/* =====================================
-   RESULT CARD
-===================================== */
-.result-card {
-    text-align: center;
-    margin-top: 40px;
-    padding: 40px 24px;
-}
-
-.result-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-    display: inline-block;
-    animation: bounce 1s ease infinite;
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-}
-
-.result-card h2 {
-    margin: 0 0 10px;
-    font-size: 24px;
-    font-weight: 800;
-    color: #0f172a;
-}
-
-.result-card p {
-    color: #64748b;
-    font-size: 15px;
-    margin-bottom: 24px;
-}
-
-.result-card button,
-.empty-state button {
-    min-height: 48px;
-    padding: 0 28px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.30);
-    transition: all 0.15s ease;
-}
-
-.result-card button:hover,
-.empty-state button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.40);
-}
-
-
-/* =====================================
-   EMPTY STATE
-===================================== */
-.empty-state {
-    text-align: center;
-    margin-top: 40px;
-    padding: 40px 24px;
-}
-
-.empty-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-    display: inline-block;
-}
-
-.empty-state h2 {
-    margin: 0 0 10px;
-    font-size: 22px;
-    font-weight: 800;
-    color: #0f172a;
-}
-
-.empty-state p {
-    color: #64748b;
-    font-size: 15px;
-    margin-bottom: 24px;
-}
-
-
-/* =====================================
-   MOBILE
-===================================== */
-@media (max-width: 560px) {
-    .page-header h2 { font-size: 17px; }
-    .page-header p { font-size: 12px; }
+.search-subject-filter:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    outline: none;
 }

@@ -4,17 +4,26 @@
 
 import { state } from './state.js';
 import { escapeHTML, formatText, normalizeText } from './helpers.js';
-import { stripFillBlank } from './questions.js';
+import { stripFillBlank, getSubjects } from './questions.js';
 
 
 export function showSearch(resetSearch = true) {
     if (resetSearch) {
         state.searchKeyword = "";
         state.searchResults = [];
+        state.searchSubject = "";
     }
 
     const app = document.getElementById("app");
     if (!app) return;
+
+    // Tạo options cho select môn
+    const subjects = getSubjects();
+    let subjectOptions = `<option value="">Tất cả môn</option>`;
+    subjects.forEach(s => {
+        const selected = state.searchSubject === s ? "selected" : "";
+        subjectOptions += `<option value="${escapeHTML(s)}" ${selected}>${escapeHTML(s)}</option>`;
+    });
 
     app.innerHTML = `
         <div class="page-header">
@@ -29,6 +38,9 @@ export function showSearch(resetSearch = true) {
                 placeholder="Nhập từ khóa..."
                 value="${escapeHTML(state.searchKeyword)}"
                 autocomplete="off" autocorrect="off" spellcheck="false">
+            <select id="searchSubjectFilter" class="search-subject-filter">
+                ${subjectOptions}
+            </select>
         </div>
         <div id="searchResults">${renderSearchResultsHTML()}</div>
     `;
@@ -39,6 +51,12 @@ export function showSearch(resetSearch = true) {
 
     const input = document.getElementById("searchInput");
     input.addEventListener("input", performSearch);
+
+    const subjectFilter = document.getElementById("searchSubjectFilter");
+    subjectFilter.addEventListener("change", () => {
+        state.searchSubject = subjectFilter.value;
+        performSearch();
+    });
 
     if (resetSearch) {
         setTimeout(() => input.focus(), 150);
@@ -78,9 +96,14 @@ export function performSearch() {
     state.searchKeyword = input.value.trim();
     const keyword = normalizeText(state.searchKeyword);
 
-    state.searchResults = keyword === ""
-        ? []
-        : state.questions.filter(q => {
+    if (keyword === "") {
+        state.searchResults = [];
+    } else {
+        state.searchResults = state.questions.filter(q => {
+            // Lọc theo môn nếu có chọn
+            if (state.searchSubject && q.mon !== state.searchSubject) {
+                return false;
+            }
             const question = normalizeText(q.question || "");
             const answer = normalizeText(q.answer || "");
             const explanation = normalizeText(q.explanation || "");
@@ -88,6 +111,7 @@ export function performSearch() {
                 || answer.includes(keyword)
                 || explanation.includes(keyword);
         });
+    }
 
     const container = document.getElementById("searchResults");
     if (container) {

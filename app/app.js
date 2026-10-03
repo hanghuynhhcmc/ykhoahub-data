@@ -5,6 +5,7 @@
 import { checkAuthAndLoad, isLoggedIn } from './js/auth.js';
 import { state } from './js/state.js';
 import { loadQuestions } from './js/questions.js';
+import { showTapHintOnce } from './js/toast.js';
 
 
 async function init() {
@@ -19,6 +20,9 @@ async function init() {
 
         // 3. Tải câu hỏi (loadQuestions tự gọi showMenu() khi xong)
         await loadQuestions();
+
+        // 4. Hiện popup nhắc nhở 1 lần duy nhất
+        showTapHintOnce();
     } catch (err) {
         console.error("Init failed:", err);
         const app = document.getElementById("app");
