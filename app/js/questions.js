@@ -2,8 +2,8 @@
    Y KHOA HUB - ENTRY POINT
 ===================================== */
 
-import { checkAuthAndLoad, isLoggedIn } from './js/auth.js';
-import { loadQuestions } from './js/questions.js';
+import { checkAuthAndLoad, isLoggedIn } from './auth.js';
+import { loadQuestions } from './questions.js';
 
 
 async function init() {
