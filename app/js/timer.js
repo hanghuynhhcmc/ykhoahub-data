@@ -2,7 +2,7 @@
    TIMER - ĐỒNG HỒ ĐẾM NGƯỢC HÌNH QUẢ BOM
 ===================================== */
 
-const WARNING_THRESHOLD = 10;       // Cảnh báo đỏ khi còn ≤ 10s
+const WARNING_THRESHOLD = 8;        // Cảnh báo đỏ khi còn ≤ 8s
 const EXPLOSION_DELAY = 300;        // Đợi 300ms sau khi nổ mới gọi callback
 const TICK_INTERVAL = 1000;         // 1 giây / tick
 
@@ -14,27 +14,62 @@ let onTimeUpCallback = null;
 
 
 /* =====================================
+   ĐẾM SỐ TỪ TRONG CÂU
+===================================== */
+
+function countWords(text) {
+    const str = String(text || "").trim();
+    if (!str) return 0;
+    // Tách theo khoảng trắng (1 hoặc nhiều)
+    return str.split(/\s+/).filter(w => w.length > 0).length;
+}
+
+
+/* =====================================
+   ĐẾM SỐ Ô ĐIỀN TRONG CÂU (FILL_BLANK)
+===================================== */
+
+function countFillBlanks(question) {
+    const matches = String(question || "").match(/\{\{\d+\}\}/g);
+    return matches ? matches.length : 0;
+}
+
+
+/* =====================================
    TÍNH THỜI GIAN THEO ĐỘ DÀI CÂU HỎI
 ===================================== */
 
-export function calculateDuration(question, type = "MCQ") {
-    const length = String(question || "").length;
-
+/**
+ * Tính thời gian làm bài dựa trên số từ + số ô điền
+ * @param {string} question - Nội dung câu hỏi
+ * @param {string} type - "MCQ" hoặc "FILL_BLANK"
+ * @param {number} choicesText - Text của các đáp án MCQ (để đếm từ)
+ * @returns {number} - Số giây
+ */
+export function calculateDuration(question, type = "MCQ", choicesText = "") {
     if (type === "MCQ") {
-        // MCQ: 8s cơ bản + 1s cho mỗi 12 ký tự
-        // Tối thiểu 10s, tối đa 25s
-        const base = 8;
-        const perChar = 1 / 12;
-        const duration = base + length * perChar;
-        return Math.round(Math.max(10, Math.min(25, duration)));
+        // MCQ:
+        // - 4s cơ bản (đọc lướt + chọn)
+        // - +0.6s cho mỗi từ trong câu hỏi
+        // - +0.4s cho mỗi từ trong đáp án
+        // - Tối thiểu 8s, tối đa 20s
+        const questionWords = countWords(question);
+        const choiceWords = countWords(choicesText);
+
+        const duration = 4 + questionWords * 0.6 + choiceWords * 0.4;
+        return Math.round(Math.max(8, Math.min(20, duration)));
     }
 
-    // FILL_BLANK: 15s cơ bản + 1s cho mỗi 8 ký tự
-    // Tối thiểu 20s, tối đa 40s
-    const base = 15;
-    const perChar = 1 / 8;
-    const duration = base + length * perChar;
-    return Math.round(Math.max(20, Math.min(40, duration)));
+    // FILL_BLANK:
+    // - 4s cơ bản
+    // - +0.6s cho mỗi từ trong câu hỏi
+    // - +3s cho mỗi ô điền (vì phải suy nghĩ + gõ)
+    // - Tối thiểu 10s, tối đa 30s
+    const questionWords = countWords(question);
+    const blanks = countFillBlanks(question);
+
+    const duration = 4 + questionWords * 0.6 + blanks * 3;
+    return Math.round(Math.max(10, Math.min(30, duration)));
 }
 
 
@@ -58,16 +93,27 @@ export function startTimer(duration, onTimeUp = null) {
         updateBombDisplay();
 
         if (timeLeft <= 0) {
-            // ⚠️ LƯU CALLBACK TRƯỚC KHI stopTimer() RESET NÓ
+            // ⚠️ LƯU CALLBACK TRƯỚC KHI RESET
             const callback = onTimeUpCallback;
 
-            stopTimer();
+            // Dừng interval (không gọi stopTimer vì nó reset callback)
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            isRunning = false;
+            onTimeUpCallback = null;
+
             triggerExplosion();
 
-            // Gọi callback sau khi bom nổ xong (300ms)
+            // Gọi callback sau khi bom nổ xong
             if (typeof callback === 'function') {
                 setTimeout(() => {
-                    callback();
+                    try {
+                        callback();
+                    } catch (err) {
+                        console.error("Timer callback error:", err);
+                    }
                 }, EXPLOSION_DELAY);
             }
         }

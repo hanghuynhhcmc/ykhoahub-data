@@ -14,8 +14,16 @@ import {
 import {
     startTimer,
     stopTimer,
+    hideTimerWidget,
     calculateDuration,
 } from './timer.js';
+
+
+/* =====================================
+   CỜ ĐÁNH DẤU KHÔNG RESTART TIMER
+   (Dùng khi ẩn đáp án → không đếm lại)
+===================================== */
+let skipTimerRestart = false;
 
 
 /* =====================================
@@ -75,15 +83,23 @@ export function renderMCQ(q, qState) {
     attachTapZones();
     attachChoiceEvents();
 
-    // Bắt đầu đếm ngược nếu chưa trả lời
-    if (!qState.checked) {
-        const duration = calculateDuration(q.question, "MCQ");
+    // Xử lý timer
+    if (qState.checked) {
+        // Đã trả lời → không có timer
+        stopTimer();
+        hideTimerWidget();
+    } else if (skipTimerRestart) {
+        // Vừa ẩn đáp án → không đếm lại
+        stopTimer();
+        hideTimerWidget();
+        skipTimerRestart = false;  // Reset cờ
+    } else {
+        // Bình thường → đếm ngược
+        const choicesText = choices.join(" ");
+        const duration = calculateDuration(q.question, "MCQ", choicesText);
         startTimer(duration, () => {
-            // Hết giờ → tự chọn đáp án đúng
             autoRevealMCQ();
         });
-    } else {
-        stopTimer();
     }
 
     if (qState.checked) {
@@ -99,7 +115,6 @@ export function renderMCQ(q, qState) {
 ===================================== */
 
 function attachTapZones() {
-    // Tap zone 2 mép → single click → next/prev
     document.querySelectorAll(".tap-zone").forEach(zone => {
         zone.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -112,7 +127,6 @@ function attachTapZones() {
         });
     });
 
-    // Double click trong card → toggle đáp án
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
@@ -150,7 +164,7 @@ export function toggleMCQReveal() {
 
 
 /* =====================================
-   ẨN ĐÁP ÁN — CHO LÀM LẠI
+   ẨN ĐÁP ÁN — KHÔNG ĐẾM LẠI
 ===================================== */
 
 export function hideMCQAnswer() {
@@ -158,11 +172,13 @@ export function hideMCQAnswer() {
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState) return;
 
+    // Đánh dấu: render tới KHÔNG start timer
+    skipTimerRestart = true;
+
     qState.checked = false;
     qState.selectedIndex = null;
     qState.isCorrect = false;
 
-    // renderMCQ sẽ tự restart timer
     renderMCQ(q, qState);
 
     const card = document.querySelector(".interactive-card");
@@ -193,7 +209,7 @@ export function selectMCQAnswer(index) {
     if (!qState || qState.checked) return;
 
     cancelToastCountdown();
-    stopTimer();  // ← Dừng bom khi user chọn đáp án
+    stopTimer();
 
     qState.selectedIndex = index;
 
@@ -242,7 +258,7 @@ export function checkMCQAnswer() {
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState || qState.checked) return;
 
-    stopTimer();  // ← Dừng bom khi check xong
+    stopTimer();
 
     const choices = getChoices(q.choices);
     const correctAnswer = String(q.answer ?? "").trim();
