@@ -1,11 +1,15 @@
 /* =====================================
-   AUTH - ĐĂNG NHẬP / ĐĂNG XUẤT (GOOGLE)
+   AUTH - ĐĂNG NHẬP / ĐĂNG KÝ (EMAIL/PASSWORD)
 ===================================== */
 
 import { supabaseClient } from './config.js';
 import { state } from './state.js';
 import { loadQuestions } from './questions.js';
 
+
+/* =====================================
+   MÀN HÌNH ĐĂNG NHẬP
+===================================== */
 
 export function showLoginScreen() {
     const app = document.getElementById("app");
@@ -18,69 +22,186 @@ export function showLoginScreen() {
                 <h1>Y KHOA HUB</h1>
                 <p class="login-subtitle">Đăng nhập để lưu tiến độ học tập</p>
 
-                <button class="google-btn" data-action="google-login">
-                    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-                        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
-                        <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
-                        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
-                        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
-                    </svg>
-                    <span>ĐĂNG NHẬP BẰNG GOOGLE</span>
-                </button>
+                <div class="login-form">
+                    <input id="loginEmail" type="email" placeholder="Email"
+                        autocomplete="email" autocorrect="off" spellcheck="false">
+                    <input id="loginPassword" type="password" placeholder="Mật khẩu"
+                        autocomplete="current-password">
+
+                    <button id="loginBtn" class="login-btn primary" data-action="login">
+                        ĐĂNG NHẬP
+                    </button>
+                </div>
 
                 <div id="loginMessage" class="login-message"></div>
 
                 <div class="login-divider"><span>hoặc</span></div>
 
-                <button class="login-btn guest" data-action="guest-login">
+                <div class="login-switch">
+                    Chưa có tài khoản?
+                    <a href="javascript:void(0)" data-action="go-signup">Tạo tài khoản mới</a>
+                </div>
+
+                <button class="login-btn guest" data-action="guest">
                     DÙNG THỬ KHÔNG CẦN ĐĂNG NHẬP
                 </button>
             </div>
         </div>
     `;
 
-    app.querySelector('[data-action="google-login"]')
-        .addEventListener("click", doGoogleLogin);
-    app.querySelector('[data-action="guest-login"]')
-        .addEventListener("click", continueAsGuest);
-}
-
-
-export async function doGoogleLogin() {
-    const msgBox = document.getElementById("loginMessage");
-    if (msgBox) {
-        msgBox.textContent = "Đang chuyển đến Google...";
-        msgBox.className = "login-message";
-    }
-
-    try {
-        const { error } = await supabaseClient.auth.signInWithOAuth({
-            provider: "google",
-            options: {
-                redirectTo: window.location.origin + window.location.pathname,
-            },
+    const pwd = document.getElementById("loginPassword");
+    if (pwd) {
+        pwd.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") doLogin();
         });
+    }
 
-        if (error && msgBox) {
-            msgBox.textContent = "Không thể đăng nhập Google: " + error.message;
-            msgBox.className = "login-message error";
-        }
-    } catch (err) {
-        console.error("Lỗi Google login:", err);
-        if (msgBox) {
-            msgBox.textContent = "Có lỗi xảy ra. Vui lòng thử lại.";
-            msgBox.className = "login-message error";
-        }
+    app.querySelector('[data-action="login"]').addEventListener("click", doLogin);
+    app.querySelector('[data-action="go-signup"]').addEventListener("click", showSignupScreen);
+    app.querySelector('[data-action="guest"]').addEventListener("click", continueAsGuest);
+}
+
+
+/* =====================================
+   MÀN HÌNH ĐĂNG KÝ
+===================================== */
+
+export function showSignupScreen() {
+    const app = document.getElementById("app");
+    if (!app) return;
+
+    app.innerHTML = `
+        <div class="login-screen">
+            <div class="login-card">
+                <div class="login-logo">🩺</div>
+                <h1>Y KHOA HUB</h1>
+                <p class="login-subtitle">Tạo tài khoản để bắt đầu học</p>
+
+                <div class="login-form">
+                    <input id="signupEmail" type="email" placeholder="Email"
+                        autocomplete="email" autocorrect="off" spellcheck="false">
+                    <input id="signupPassword" type="password" placeholder="Mật khẩu (ít nhất 6 ký tự)"
+                        autocomplete="new-password">
+                    <input id="signupPasswordConfirm" type="password" placeholder="Nhập lại mật khẩu"
+                        autocomplete="new-password">
+
+                    <button id="signupBtn" class="login-btn primary" data-action="signup">
+                        TẠO TÀI KHOẢN
+                    </button>
+                </div>
+
+                <div id="signupMessage" class="login-message"></div>
+
+                <div class="login-divider"><span>hoặc</span></div>
+
+                <div class="login-switch">
+                    Đã có tài khoản?
+                    <a href="javascript:void(0)" data-action="go-login">Đăng nhập</a>
+                </div>
+
+                <button class="login-btn guest" data-action="guest">
+                    DÙNG THỬ KHÔNG CẦN ĐĂNG NHẬP
+                </button>
+            </div>
+        </div>
+    `;
+
+    const pwdConfirm = document.getElementById("signupPasswordConfirm");
+    if (pwdConfirm) {
+        pwdConfirm.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") doSignup();
+        });
+    }
+
+    app.querySelector('[data-action="signup"]').addEventListener("click", doSignup);
+    app.querySelector('[data-action="go-login"]').addEventListener("click", showLoginScreen);
+    app.querySelector('[data-action="guest"]').addEventListener("click", continueAsGuest);
+}
+
+
+/* =====================================
+   ĐĂNG NHẬP
+===================================== */
+
+export async function doLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+        showMessage("loginMessage", "Vui lòng nhập email và mật khẩu.", "error");
+        return;
+    }
+
+    setLoading("loginBtn", true, "ĐĂNG NHẬP");
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    setLoading("loginBtn", false, "ĐĂNG NHẬP");
+
+    if (error) {
+        showMessage("loginMessage", translateAuthError(error.message), "error");
+        return;
+    }
+
+    state.currentUser = data.user;
+    state.isGuest = false;
+    loadQuestions();
+}
+
+
+/* =====================================
+   ĐĂNG KÝ
+===================================== */
+
+export async function doSignup() {
+    const email = document.getElementById("signupEmail").value.trim();
+    const password = document.getElementById("signupPassword").value;
+    const passwordConfirm = document.getElementById("signupPasswordConfirm").value;
+
+    if (!email || !password || !passwordConfirm) {
+        showMessage("signupMessage", "Vui lòng điền đầy đủ thông tin.", "error");
+        return;
+    }
+    if (password.length < 6) {
+        showMessage("signupMessage", "Mật khẩu cần ít nhất 6 ký tự.", "error");
+        return;
+    }
+    if (password !== passwordConfirm) {
+        showMessage("signupMessage", "Mật khẩu nhập lại không khớp.", "error");
+        return;
+    }
+
+    setLoading("signupBtn", true, "TẠO TÀI KHOẢN");
+
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+
+    setLoading("signupBtn", false, "TẠO TÀI KHOẢN");
+
+    if (error) {
+        showMessage("signupMessage", translateAuthError(error.message), "error");
+        return;
+    }
+
+    if (data.session) {
+        // Đăng nhập luôn (khi đã tắt Confirm email)
+        state.currentUser = data.user;
+        state.isGuest = false;
+        loadQuestions();
+    } else {
+        showMessage("signupMessage", "Đăng ký thành công! Kiểm tra email để xác nhận.", "success");
     }
 }
 
+
+/* =====================================
+   KHÁCH / ĐĂNG XUẤT
+===================================== */
 
 export function continueAsGuest() {
     state.isGuest = true;
     state.currentUser = null;
     loadQuestions();
 }
-
 
 export async function doLogout() {
     if (state.isGuest) {
@@ -97,6 +218,10 @@ export async function doLogout() {
     showLoginScreen();
 }
 
+
+/* =====================================
+   CHECK AUTH KHI KHỞI ĐỘNG
+===================================== */
 
 export async function checkAuthAndLoad() {
     try {
@@ -126,4 +251,34 @@ export async function checkAuthAndLoad() {
             showLoginScreen();
         }
     });
+}
+
+
+/* =====================================
+   HELPERS
+===================================== */
+
+function setLoading(btnId, isLoading, defaultText) {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        btn.disabled = isLoading;
+        btn.textContent = isLoading ? "ĐANG XỬ LÝ..." : defaultText;
+    }
+}
+
+function showMessage(boxId, message, type) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.textContent = message;
+    box.className = "login-message " + (type === "success" ? "success" : "error");
+}
+
+function translateAuthError(msg) {
+    if (msg.includes("Invalid login credentials")) return "Email hoặc mật khẩu không đúng.";
+    if (msg.includes("Email not confirmed")) return "Email chưa được xác nhận. Kiểm tra hộp thư.";
+    if (msg.includes("User already registered")) return "Email này đã được đăng ký.";
+    if (msg.includes("Password should be")) return "Mật khẩu cần ít nhất 6 ký tự.";
+    if (msg.includes("Unable to validate email")) return "Email không hợp lệ.";
+    if (msg.includes("rate limit")) return "Quá nhiều lần thử. Vui lòng đợi vài phút.";
+    return msg;
 }
