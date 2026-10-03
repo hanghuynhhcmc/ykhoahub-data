@@ -1,9 +1,25 @@
 /* =====================================
    Y KHOA HUB - APP.JS
-   Chỉ hỗ trợ 2 loại câu hỏi:
+   Hỗ trợ 2 loại câu hỏi:
    - MCQ        (dang = "MCQ")
    - FILL_BLANK (dang = "FILL_BLANK")
-   Flashcard đã bị loại bỏ hoàn toàn.
+===================================== */
+
+/* =====================================
+   ⚠️ CẤU HÌNH SUPABASE — THAY KEY CỦA BẠN
+===================================== */
+
+// ⚠️ THAY URL — giữ nguyên nếu đúng project của bạn
+const SUPABASE_URL = "https://yiawgxxdnzmxhxwsqlhs.supabase.co";
+
+// ⚠️ THAY KEY — dán Publishable key (sb_publishable_...) vào đây
+const SUPABASE_KEY = "sb_publishable_arMY3Q_lldQilqck4QKGcA_F-aUM4Ob";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+/* =====================================
+   BIẾN TOÀN CỤC
 ===================================== */
 
 let questions = [];
@@ -17,6 +33,9 @@ let searchKeyword = "";
 let returnToSearch = false;
 
 let answeredState = {};
+
+let currentUser = null;
+let isGuest = false;
 
 
 /* =====================================
@@ -32,7 +51,189 @@ const DASHBOARD_KEY = "ykhoahub_dashboard_subjects";
 
 
 /* =====================================
-   TẢI DỮ LIỆU
+   KHỞI ĐỘNG — KIỂM TRA ĐĂNG NHẬP TRƯỚC
+===================================== */
+
+checkAuthAndLoad();
+
+
+async function checkAuthAndLoad() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+            currentUser = session.user;
+            isGuest = false;
+            loadQuestions();
+        } else {
+            showLoginScreen();
+        }
+    } catch (err) {
+        console.error("Lỗi check auth:", err);
+        showLoginScreen();
+    }
+}
+
+
+/* =====================================
+   MÀN HÌNH ĐĂNG NHẬP
+===================================== */
+
+function showLoginScreen() {
+    const app = document.getElementById("app");
+    if (!app) return;
+
+    app.innerHTML = `
+        <div class="login-screen">
+            <div class="login-card">
+                <div class="login-logo">🩺</div>
+                <h1>Y KHOA HUB</h1>
+                <p class="login-subtitle">Đăng nhập để lưu tiến độ học tập</p>
+
+                <div class="login-form">
+                    <input id="loginEmail" type="email" placeholder="Email"
+                        autocomplete="email" autocorrect="off" spellcheck="false">
+                    <input id="loginPassword" type="password" placeholder="Mật khẩu"
+                        autocomplete="current-password">
+
+                    <button id="loginBtn" class="login-btn primary" onclick="doLogin()">
+                        ĐĂNG NHẬP
+                    </button>
+                    <button id="signupBtn" class="login-btn secondary" onclick="doSignup()">
+                        TẠO TÀI KHOẢN MỚI
+                    </button>
+                </div>
+
+                <div id="loginMessage" class="login-message"></div>
+
+                <div class="login-divider"><span>hoặc</span></div>
+
+                <button class="login-btn guest" onclick="continueAsGuest()">
+                    DÙNG THỬ KHÔNG CẦN ĐĂNG NHẬP
+                </button>
+            </div>
+        </div>
+    `;
+
+    const pwd = document.getElementById("loginPassword");
+    if (pwd) {
+        pwd.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") doLogin();
+        });
+    }
+}
+
+
+async function doLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+        showLoginMessage("Vui lòng nhập email và mật khẩu.", "error");
+        return;
+    }
+
+    setLoginLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoginLoading(false);
+
+    if (error) {
+        showLoginMessage(translateAuthError(error.message), "error");
+        return;
+    }
+
+    currentUser = data.user;
+    isGuest = false;
+    loadQuestions();
+}
+
+
+async function doSignup() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+        showLoginMessage("Vui lòng nhập email và mật khẩu.", "error");
+        return;
+    }
+    if (password.length < 6) {
+        showLoginMessage("Mật khẩu cần ít nhất 6 ký tự.", "error");
+        return;
+    }
+
+    setLoginLoading(true);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setLoginLoading(false);
+
+    if (error) {
+        showLoginMessage(translateAuthError(error.message), "error");
+        return;
+    }
+
+    if (data.session) {
+        currentUser = data.user;
+        isGuest = false;
+        loadQuestions();
+    } else {
+        showLoginMessage("Đăng ký thành công! Kiểm tra email để xác nhận.", "success");
+    }
+}
+
+
+function continueAsGuest() {
+    isGuest = true;
+    currentUser = null;
+    loadQuestions();
+}
+
+
+async function doLogout() {
+    if (isGuest) {
+        isGuest = false;
+        showLoginScreen();
+        return;
+    }
+    try {
+        await supabase.auth.signOut();
+    } catch (err) {
+        console.error("Lỗi đăng xuất:", err);
+    }
+    currentUser = null;
+    showLoginScreen();
+}
+
+
+function setLoginLoading(isLoading) {
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    if (loginBtn) {
+        loginBtn.disabled = isLoading;
+        loginBtn.textContent = isLoading ? "ĐANG XỬ LÝ..." : "ĐĂNG NHẬP";
+    }
+    if (signupBtn) signupBtn.disabled = isLoading;
+}
+
+
+function showLoginMessage(message, type) {
+    const box = document.getElementById("loginMessage");
+    if (!box) return;
+    box.textContent = message;
+    box.className = "login-message " + (type === "success" ? "success" : "error");
+}
+
+
+function translateAuthError(msg) {
+    if (msg.includes("Invalid login credentials")) return "Email hoặc mật khẩu không đúng.";
+    if (msg.includes("Email not confirmed")) return "Email chưa được xác nhận. Kiểm tra hộp thư.";
+    if (msg.includes("User already registered")) return "Email này đã được đăng ký.";
+    if (msg.includes("Password should be")) return "Mật khẩu cần ít nhất 6 ký tự.";
+    if (msg.includes("Unable to validate email")) return "Email không hợp lệ.";
+    if (msg.includes("rate limit")) return "Quá nhiều lần thử. Vui lòng đợi vài phút.";
+    return msg;
+}
+
+
+/* =====================================
+   TẢI DỮ LIỆU CÂU HỎI
 ===================================== */
 
 async function loadQuestions() {
@@ -87,8 +288,6 @@ async function loadQuestions() {
         }
     }
 }
-
-loadQuestions();
 
 
 /* =====================================
@@ -254,7 +453,39 @@ function showMenu() {
     const app = document.getElementById("app");
     if (!app) return;
 
+    let userBarHTML = "";
+    if (isGuest) {
+        userBarHTML = `
+            <div class="user-bar guest">
+                <div class="user-info">
+                    <div class="user-avatar">?</div>
+                    <div>
+                        <div class="user-name">Khách</div>
+                        <div class="user-note">Tiến độ không được lưu</div>
+                    </div>
+                </div>
+                <button class="user-login-btn" onclick="doLogout()">ĐĂNG NHẬP</button>
+            </div>
+        `;
+    } else if (currentUser) {
+        const email = currentUser.email || "";
+        const initial = email.charAt(0).toUpperCase();
+        userBarHTML = `
+            <div class="user-bar">
+                <div class="user-info">
+                    <div class="user-avatar">${escapeHTML(initial)}</div>
+                    <div>
+                        <div class="user-name">${escapeHTML(email)}</div>
+                        <div class="user-note">Đã đăng nhập</div>
+                    </div>
+                </div>
+                <button class="user-login-btn" onclick="doLogout()">ĐĂNG XUẤT</button>
+            </div>
+        `;
+    }
+
     app.innerHTML = `
+        ${userBarHTML}
         <div class="section-heading">MÔN ĐANG HỌC</div>
         <div class="dashboard-grid">${dashboardHTML}</div>
         <div class="menu-section">
@@ -635,13 +866,11 @@ function renderFillBlank(q, state) {
         ${createStudyHeader(q)}
         <div class="interactive-card">
 
-            <!-- KHỐI CÂU HỎI -->
             <div class="fill-blank-cau-hoi">
                 <div class="card-label">CÂU HỎI</div>
                 <div class="fill-blank-cau-hoi-text">${parts.questionPart}</div>
             </div>
 
-            <!-- KHỐI TRẢ LỜI -->
             <div class="fill-blank-tra-loi">
                 <div class="card-label">TRẢ LỜI</div>
                 <div class="fill-blank-tra-loi-text" id="fillBlankAnswerArea">
@@ -675,18 +904,6 @@ function renderFillBlank(q, state) {
     }
 }
 
-/**
- * Tách question thành 2 phần:
- *  - questionPart: phần câu hỏi dẫn (trước "Đáp án:")
- *  - answerTemplate: phần chứa {{n}} (sau "Đáp án:")
- *
- * Format thực tế:
- *   <câu hỏi dẫn>
- *   Đáp án:
- *   <đoạn có {{1}}, {{2}}, ...>
- *
- * Nếu không có "Đáp án:", coi toàn bộ là câu hỏi dẫn.
- */
 function splitFillBlankQuestion(question) {
     const text = String(question ?? "");
 
@@ -716,7 +933,6 @@ function splitFillBlankQuestion(question) {
     };
 }
 
-/** Sinh HTML cho đoạn trả lời: thay {{n}} bằng input */
 function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
     if (!template) return "";
 
@@ -726,7 +942,6 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
     let match;
 
     while ((match = regex.exec(template)) !== null) {
-        // Text trước placeholder
         const textBefore = template.slice(lastIndex, match.index);
         if (textBefore) {
             container.appendChild(document.createTextNode(textBefore));
@@ -743,12 +958,10 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
             inputCls += isCorrect ? " correct-input" : " wrong-input";
         }
 
-        // Tạo wrapper span
         const wrapper = document.createElement("span");
         wrapper.className = "fill-blank-inline";
         wrapper.dataset.index = String(idx);
 
-        // Tạo input
         const input = document.createElement("input");
         input.type = "text";
         input.className = inputCls;
@@ -761,7 +974,6 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
 
         wrapper.appendChild(input);
 
-        // Tick ✓/✗
         if (checked) {
             const status = document.createElement("span");
             status.className = isCorrect
@@ -776,20 +988,17 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
         lastIndex = match.index + match[0].length;
     }
 
-    // Text còn lại sau placeholder cuối
     const textAfter = template.slice(lastIndex);
     if (textAfter) {
         container.appendChild(document.createTextNode(textAfter));
     }
 
-    // Đổi \n thành <br>
     let html = container.innerHTML;
     html = html.replace(/\n/g, "<br>");
 
     return html;
 }
 
-/** Sinh HTML khối ĐÁP ÁN */
 function buildFillBlankDapAnHTML(template, correctAnswers) {
     if (!template) return "";
 
