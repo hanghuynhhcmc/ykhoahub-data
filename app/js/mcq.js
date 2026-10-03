@@ -11,6 +11,11 @@ import {
     cancelToastCountdown,
     resetToastState,
 } from './toast.js';
+import {
+    startTimer,
+    stopTimer,
+    calculateDuration,
+} from './timer.js';
 
 
 /* =====================================
@@ -58,13 +63,28 @@ export function renderMCQ(q, qState) {
             <div id="mcqExplanation"></div>
             <div id="autoNotLearned"></div>
         </div>
-        <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước"></div>
-        <div class="tap-zone tap-zone-right" data-tap="next" aria-label="Câu tiếp theo"></div>
+        <div class="tap-zone tap-zone-left" data-tap="prev" aria-label="Câu trước">
+            <span class="tap-zone-arrow">←</span>
+        </div>
+        <div class="tap-zone tap-zone-right" data-tap="next" aria-label="Câu tiếp theo">
+            <span class="tap-zone-arrow">→</span>
+        </div>
     `;
 
     attachHeaderEvents();
     attachTapZones();
     attachChoiceEvents();
+
+    // Bắt đầu đếm ngược nếu chưa trả lời
+    if (!qState.checked) {
+        const duration = calculateDuration(q.question, "MCQ");
+        startTimer(duration, () => {
+            // Hết giờ → tự chọn đáp án đúng
+            autoRevealMCQ();
+        });
+    } else {
+        stopTimer();
+    }
 
     if (qState.checked) {
         renderMCQExplanation(q, qState);
@@ -92,14 +112,13 @@ function attachTapZones() {
         });
     });
 
-    // Double click trong card → hiện đáp án
+    // Double click trong card → toggle đáp án
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
-            // Bỏ qua nếu double click vào nút đáp án
             if (e.target.closest(".answer-choice")) return;
             e.stopPropagation();
-            handleDoubleClick();
+            toggleMCQReveal();
         });
     }
 }
@@ -113,29 +132,48 @@ function attachChoiceEvents() {
     });
 }
 
-/**
- * Xử lý double click:
- * - Nếu chưa trả lời → tự chọn đáp án đúng
- * - Nếu đã trả lời → cuộn tới phần giải thích
- */
-function handleDoubleClick() {
+
+/* =====================================
+   TOGGLE ĐÁP ÁN (DOUBLE CLICK)
+===================================== */
+
+export function toggleMCQReveal() {
     const qState = state.answeredState[state.currentQuestion];
     if (!qState) return;
 
     if (qState.checked) {
-        const exp = document.getElementById("mcqExplanation");
-        if (exp) {
-            exp.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        return;
+        hideMCQAnswer();
+    } else {
+        autoRevealMCQ();
     }
-
-    autoRevealMCQ();
 }
 
 
 /* =====================================
-   ĐẾM NGƯỢC HIỆN TOAST (CHỈ CÂU CHƯA HỌC)
+   ẨN ĐÁP ÁN — CHO LÀM LẠI
+===================================== */
+
+export function hideMCQAnswer() {
+    const q = state.selectedQuestions[state.currentQuestion];
+    const qState = state.answeredState[state.currentQuestion];
+    if (!q || !qState) return;
+
+    qState.checked = false;
+    qState.selectedIndex = null;
+    qState.isCorrect = false;
+
+    // renderMCQ sẽ tự restart timer
+    renderMCQ(q, qState);
+
+    const card = document.querySelector(".interactive-card");
+    if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+
+
+/* =====================================
+   ĐẾM NGƯỢC HIỆN TOAST
 ===================================== */
 
 function maybeStartToastCountdown(q) {
@@ -147,7 +185,7 @@ function maybeStartToastCountdown(q) {
 
 
 /* =====================================
-   CHỌN ĐÁP ÁN + TỰ ĐỘNG KIỂM TRA
+   CHỌN ĐÁP ÁN
 ===================================== */
 
 export function selectMCQAnswer(index) {
@@ -155,6 +193,7 @@ export function selectMCQAnswer(index) {
     if (!qState || qState.checked) return;
 
     cancelToastCountdown();
+    stopTimer();  // ← Dừng bom khi user chọn đáp án
 
     qState.selectedIndex = index;
 
@@ -169,7 +208,7 @@ export function selectMCQAnswer(index) {
 
 
 /* =====================================
-   TỰ ĐỘNG CHỌN ĐÁP ÁN ĐÚNG (DOUBLE CLICK)
+   TỰ ĐỘNG CHỌN ĐÁP ÁN ĐÚNG
 ===================================== */
 
 export function autoRevealMCQ() {
@@ -178,6 +217,7 @@ export function autoRevealMCQ() {
     if (!q || !qState) return;
 
     cancelToastCountdown();
+    stopTimer();
 
     const choices = getChoices(q.choices);
     const correctAnswer = String(q.answer ?? "").trim();
@@ -201,6 +241,8 @@ export function checkMCQAnswer() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState || qState.checked) return;
+
+    stopTimer();  // ← Dừng bom khi check xong
 
     const choices = getChoices(q.choices);
     const correctAnswer = String(q.answer ?? "").trim();
@@ -229,7 +271,6 @@ export function checkMCQAnswer() {
 
     renderMCQExplanation(q, qState);
 
-    // Cuộn tới phần giải thích sau khi check
     setTimeout(() => {
         const exp = document.getElementById("mcqExplanation");
         if (exp) {

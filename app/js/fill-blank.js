@@ -10,9 +10,12 @@ import {
     startToastCountdown,
     cancelToastCountdown,
     resetToastState,
-    startBorderRunLoop,
-    stopBorderRunLoop,
 } from './toast.js';
+import {
+    startTimer,
+    stopTimer,
+    calculateDuration,
+} from './timer.js';
 
 
 /* =====================================
@@ -75,9 +78,16 @@ export function renderFillBlank(q, qState) {
     attachFillBlankInputs(q, qState);
     attachTapZones();
 
-    // Bắt đầu loop chạy chữ quanh viền
-    stopBorderRunLoop();
-    startBorderRunLoop();
+    // Bắt đầu đếm ngược nếu chưa trả lời
+    if (!qState.checked) {
+        const duration = calculateDuration(q.question, "FILL_BLANK");
+        startTimer(duration, () => {
+            // Hết giờ → tự điền đáp án đúng
+            autoRevealFillBlank();
+        });
+    } else {
+        stopTimer();
+    }
 
     if (qState.checked) {
         renderFillBlankExplanation(q, qState);
@@ -110,7 +120,6 @@ function attachTapZones() {
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
-            // Bỏ qua nếu double click vào input (để user chọn text)
             if (e.target.tagName === "INPUT") return;
             e.stopPropagation();
             toggleFillBlankReveal();
@@ -121,9 +130,6 @@ function attachTapZones() {
 
 /* =====================================
    TOGGLE ĐÁP ÁN (DOUBLE CLICK)
-   - Lần 1: hiện đáp án
-   - Lần 2: ẩn đáp án
-   - Lần 3: hiện lại...
 ===================================== */
 
 export function toggleFillBlankReveal() {
@@ -147,15 +153,13 @@ export function hideFillBlankAnswer() {
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState) return;
 
-    // Reset trạng thái
     qState.checked = false;
     qState.userAnswers = [];
     qState.results = [];
 
-    // Render lại câu hỏi (sạch sẽ)
+    // renderFillBlank sẽ tự restart timer
     renderFillBlank(q, qState);
 
-    // Cuộn lên đầu card
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -164,7 +168,7 @@ export function hideFillBlankAnswer() {
 
 
 /* =====================================
-   ĐẾM NGƯỢC HIỆN TOAST (CHỈ CÂU CHƯA HỌC)
+   ĐẾM NGƯỢC HIỆN TOAST
 ===================================== */
 
 function maybeStartToastCountdown(q) {
@@ -360,7 +364,7 @@ export function attachFillBlankInputs(q, qState) {
 
 
 /* =====================================
-   TỰ ĐỘNG GIÃN INPUT THEO NỘI DUNG
+   TỰ ĐỘNG GIÃN INPUT
 ===================================== */
 
 export function autoSizeInput(input) {
@@ -411,7 +415,7 @@ export function lockFillBlankInputs() {
 
 
 /* =====================================
-   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG (DOUBLE CLICK)
+   TỰ ĐỘNG ĐIỀN ĐÁP ÁN ĐÚNG
 ===================================== */
 
 export function autoRevealFillBlank() {
@@ -420,6 +424,7 @@ export function autoRevealFillBlank() {
     if (!q || !qState) return;
 
     cancelToastCountdown();
+    stopTimer();  // ← Dừng bom
 
     const correctAnswers = getFillBlankAnswers(q.answer);
 
@@ -443,6 +448,8 @@ export function checkFillBlankAnswer() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
     if (!q || !qState || qState.checked) return;
+
+    stopTimer();  // ← Dừng bom
 
     const correctAnswers = getFillBlankAnswers(q.answer);
     const inputs = document.querySelectorAll(".fill-blank-inline-input");
