@@ -15,7 +15,8 @@ const SUPABASE_URL = "https://yiawgxxdnzmxhxwsqlhs.supabase.co";
 // ⚠️ THAY KEY — dán Publishable key (sb_publishable_...) vào đây
 const SUPABASE_KEY = "sb_publishable_arMY3Q_lldQilqck4QKGcA_F-aUM4Ob";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ⚠️ ĐỔI TÊN BIẾN: supabase → supabaseClient (tránh xung đột với window.supabase)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
 /* =====================================
@@ -59,7 +60,7 @@ checkAuthAndLoad();
 
 async function checkAuthAndLoad() {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session && session.user) {
             currentUser = session.user;
             isGuest = false;
@@ -133,7 +134,7 @@ async function doLogin() {
     }
 
     setLoginLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     setLoginLoading(false);
 
     if (error) {
@@ -161,7 +162,7 @@ async function doSignup() {
     }
 
     setLoginLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
     setLoginLoading(false);
 
     if (error) {
@@ -193,7 +194,7 @@ async function doLogout() {
         return;
     }
     try {
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
     } catch (err) {
         console.error("Lỗi đăng xuất:", err);
     }
