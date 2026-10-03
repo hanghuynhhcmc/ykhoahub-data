@@ -23,7 +23,7 @@ export function getDashboardSubjects() {
 
     saved = saved.filter(s => subjects.includes(s));
 
-    if (saved.length === 0) {
+    if (saved.length === 0 && subjects.length > 0) {
         saved = subjects.slice(0, 4);
         saveDashboardSubjects(saved);
     }
@@ -61,18 +61,14 @@ export function addDashboardSubject(subject) {
 
 
 /* =====================================
-   XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT
+   ĐĂNG NHẬP / ĐĂNG XUẤT
 ===================================== */
 
 function handleLogout() {
-    // Nếu là guest → chuyển sang màn hình login (nếu có)
     if (state.isGuest) {
-        // Tạm thời: chỉ hiện alert
         alert("Chức năng đăng nhập chưa khả dụng.");
         return;
     }
-
-    // Nếu đã đăng nhập → đăng xuất
     signOut();
     state.currentUser = null;
     state.isGuest = true;

@@ -2,16 +2,12 @@
    TOAST - POPUP NHẮC NHỞ
 ===================================== */
 
-const TOAST_DURATION = 4000;      // 4 giây hiển thị toast
-const TOAST_DELAY = 5000;         // 5 giây chờ trước khi hiện toast
+const TOAST_DURATION = 4000;
+const TOAST_DELAY = 5000;
 const TOAST_SHOWN_KEY = "toast_dblclick_shown";
 
 let toastTimer = null;
 
-/**
- * Reset timer khi chuyển câu mới
- * KHÔNG reset cờ sessionStorage
- */
 export function resetToastState() {
     if (toastTimer) {
         clearTimeout(toastTimer);
@@ -21,10 +17,6 @@ export function resetToastState() {
     if (existing) hideToast(existing, true);
 }
 
-/**
- * Bắt đầu đếm ngược 5s để hiện toast
- * Chỉ chạy nếu trong session này CHƯA từng hiện toast
- */
 export function startToastCountdown() {
     if (sessionStorage.getItem(TOAST_SHOWN_KEY)) return;
 
@@ -39,9 +31,6 @@ export function startToastCountdown() {
     }, TOAST_DELAY);
 }
 
-/**
- * Hủy đếm ngược (khi người dùng tương tác)
- */
 export function cancelToastCountdown() {
     if (toastTimer) {
         clearTimeout(toastTimer);
@@ -49,9 +38,6 @@ export function cancelToastCountdown() {
     }
 }
 
-/**
- * Hiển thị toast
- */
 export function showDoubleClickHint() {
     const existing = document.getElementById("dblclickHintToast");
     if (existing) existing.remove();

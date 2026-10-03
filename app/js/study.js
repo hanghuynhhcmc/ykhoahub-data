@@ -16,12 +16,12 @@ import { showMenu } from './dashboard.js';
 
 export function startDashboardQuiz(subject) {
     if (!subject) return;
-    state.selectedQuestions = state.questions.filter(q => q.mon === subject);
-    if (state.selectedQuestions.length === 0) {
+    let list = state.questions.filter(q => q.mon === subject);
+    if (list.length === 0) {
         alert("Môn này chưa có câu hỏi.");
         return;
     }
-    state.selectedQuestions = createWeightedQuestions(state.selectedQuestions);
+    state.selectedQuestions = createWeightedQuestions(list);
     state.currentQuestion = 0;
     state.returnToSearch = false;
     state.answeredState = {};
