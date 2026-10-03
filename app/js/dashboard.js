@@ -6,8 +6,12 @@ import { DASHBOARD_KEY } from './config.js';
 import { state } from './state.js';
 import { escapeHTML } from './helpers.js';
 import { getSubjects, getSubjectStats, showNotLearned } from './questions.js';
-import { doLogout } from './auth.js';
+import { signOut } from './auth.js';
 
+
+/* =====================================
+   DASHBOARD SUBJECTS
+===================================== */
 
 export function getDashboardSubjects() {
     const subjects = getSubjects();
@@ -52,6 +56,26 @@ export function addDashboardSubject(subject) {
     }
     dashboard.push(subject);
     saveDashboardSubjects(dashboard);
+    showMenu();
+}
+
+
+/* =====================================
+   XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT
+===================================== */
+
+function handleLogout() {
+    // Nếu là guest → chuyển sang màn hình login (nếu có)
+    if (state.isGuest) {
+        // Tạm thời: chỉ hiện alert
+        alert("Chức năng đăng nhập chưa khả dụng.");
+        return;
+    }
+
+    // Nếu đã đăng nhập → đăng xuất
+    signOut();
+    state.currentUser = null;
+    state.isGuest = true;
     showMenu();
 }
 
@@ -157,7 +181,7 @@ export function showMenu() {
     `;
 
     const logoutBtn = app.querySelector('[data-action="logout"]');
-    if (logoutBtn) logoutBtn.addEventListener("click", doLogout);
+    if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
 
     app.querySelector('[data-action="show-not-learned"]')
         .addEventListener("click", showNotLearned);
