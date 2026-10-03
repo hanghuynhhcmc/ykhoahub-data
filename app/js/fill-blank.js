@@ -79,11 +79,11 @@ export function renderFillBlank(q, qState) {
 
 
 /* =====================================
-   TAP ZONES + DOUBLE CLICK TRONG Ô
+   GẮN SỰ KIỆN
 ===================================== */
 
 function attachTapZones() {
-    // 1. Tap zone 2 mép → single click → next/prev (KHÔNG delay)
+    // Tap zone 2 mép → single click → next/prev
     document.querySelectorAll(".tap-zone").forEach(zone => {
         zone.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -96,16 +96,36 @@ function attachTapZones() {
         });
     });
 
-    // 2. Double click trong ô nội dung → hiện đáp án
+    // Double click trong card → hiện đáp án
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
             // Bỏ qua nếu double click vào input (để user chọn text)
             if (e.target.tagName === "INPUT") return;
             e.stopPropagation();
-            autoRevealFillBlank();
+            handleDoubleClick();
         });
     }
+}
+
+/**
+ * Xử lý double click:
+ * - Nếu chưa trả lời → tự điền đáp án đúng
+ * - Nếu đã trả lời → cuộn tới phần đáp án
+ */
+function handleDoubleClick() {
+    const qState = state.answeredState[state.currentQuestion];
+    if (!qState) return;
+
+    if (qState.checked) {
+        const dapAnBox = document.getElementById("fillDapAn");
+        if (dapAnBox) {
+            dapAnBox.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+    }
+
+    autoRevealFillBlank();
 }
 
 
@@ -363,7 +383,7 @@ export function lockFillBlankInputs() {
 export function autoRevealFillBlank() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
-    if (!q || !qState || qState.checked) return;
+    if (!q || !qState) return;
 
     cancelToastCountdown();
 
@@ -439,6 +459,14 @@ export function checkFillBlankAnswer() {
     }
 
     renderFillBlankExplanation(q, qState);
+
+    // Cuộn tới phần đáp án sau khi check
+    setTimeout(() => {
+        const dapAn = document.getElementById("fillDapAn");
+        if (dapAn) {
+            dapAn.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, 100);
 }
 
 

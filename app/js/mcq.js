@@ -64,13 +64,7 @@ export function renderMCQ(q, qState) {
 
     attachHeaderEvents();
     attachTapZones();
-
-    app.querySelectorAll(".answer-choice").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            selectMCQAnswer(Number(btn.dataset.index));
-        });
-    });
+    attachChoiceEvents();
 
     if (qState.checked) {
         renderMCQExplanation(q, qState);
@@ -81,11 +75,11 @@ export function renderMCQ(q, qState) {
 
 
 /* =====================================
-   TAP ZONES + DOUBLE CLICK TRONG Ô
+   GẮN SỰ KIỆN
 ===================================== */
 
 function attachTapZones() {
-    // 1. Tap zone 2 mép → single click → next/prev (KHÔNG delay)
+    // Tap zone 2 mép → single click → next/prev
     document.querySelectorAll(".tap-zone").forEach(zone => {
         zone.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -98,16 +92,45 @@ function attachTapZones() {
         });
     });
 
-    // 2. Double click trong ô nội dung → hiện đáp án
+    // Double click trong card → hiện đáp án
     const card = document.querySelector(".interactive-card");
     if (card) {
         card.addEventListener("dblclick", (e) => {
             // Bỏ qua nếu double click vào nút đáp án
             if (e.target.closest(".answer-choice")) return;
             e.stopPropagation();
-            autoRevealMCQ();
+            handleDoubleClick();
         });
     }
+}
+
+function attachChoiceEvents() {
+    document.querySelectorAll(".answer-choice").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            selectMCQAnswer(Number(btn.dataset.index));
+        });
+    });
+}
+
+/**
+ * Xử lý double click:
+ * - Nếu chưa trả lời → tự chọn đáp án đúng
+ * - Nếu đã trả lời → cuộn tới phần giải thích
+ */
+function handleDoubleClick() {
+    const qState = state.answeredState[state.currentQuestion];
+    if (!qState) return;
+
+    if (qState.checked) {
+        const exp = document.getElementById("mcqExplanation");
+        if (exp) {
+            exp.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+    }
+
+    autoRevealMCQ();
 }
 
 
@@ -152,7 +175,7 @@ export function selectMCQAnswer(index) {
 export function autoRevealMCQ() {
     const q = state.selectedQuestions[state.currentQuestion];
     const qState = state.answeredState[state.currentQuestion];
-    if (!q || !qState || qState.checked) return;
+    if (!q || !qState) return;
 
     cancelToastCountdown();
 
@@ -205,6 +228,14 @@ export function checkMCQAnswer() {
     }
 
     renderMCQExplanation(q, qState);
+
+    // Cuộn tới phần giải thích sau khi check
+    setTimeout(() => {
+        const exp = document.getElementById("mcqExplanation");
+        if (exp) {
+            exp.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, 100);
 }
 
 
