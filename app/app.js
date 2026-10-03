@@ -16,20 +16,6 @@ let searchResults = [];
 let searchKeyword = "";
 let returnToSearch = false;
 
-/* Lưu trạng thái từng câu trong selectedQuestions
-   answeredState[index] = {
-     type: "MCQ" | "FILL_BLANK",
-     checked: bool,
-     // MCQ
-     selectedIndex: number|null,
-     isCorrect: bool,
-     // FILL_BLANK
-     userAnswers: [string],
-     results: [bool],
-     // Chung
-     markedNotLearned: bool
-   }
-*/
 let answeredState = {};
 
 
@@ -64,7 +50,6 @@ async function loadQuestions() {
         console.log("Không tải được dữ liệu online:", error);
     }
 
-    // Đọc cache
     try {
         const savedData = localStorage.getItem(LOCAL_CACHE_KEY);
         if (savedData) {
@@ -79,7 +64,6 @@ async function loadQuestions() {
         console.log("Không đọc được cache:", error);
     }
 
-    // Đọc questions.json local
     try {
         const response = await fetch("questions.json");
         if (!response.ok) throw new Error("Không tìm thấy questions.json");
@@ -199,7 +183,6 @@ function isNotLearned(id) {
     return count > 0;
 }
 
-/** Tăng repeatCount -> đưa vào danh sách "Chưa thuộc" */
 function markAsNotLearned(id) {
     if (id === null || id === undefined || String(id).trim() === "") return;
     const key = "repeat_" + id;
@@ -324,7 +307,6 @@ function createWeightedQuestions(list) {
 
 /* =====================================
    XÁC ĐỊNH LOẠI CÂU HỎI
-   Chỉ chấp nhận MCQ và FILL_BLANK. Khác -> null.
 ===================================== */
 
 function getQuestionType(q) {
@@ -335,7 +317,6 @@ function getQuestionType(q) {
     return null;
 }
 
-/* Lọc câu hợp lệ ngay từ đầu */
 function isValidQuestion(q) {
     const type = getQuestionType(q);
     if (!type) return false;
@@ -348,7 +329,6 @@ function isValidQuestion(q) {
         return true;
     }
 
-    // FILL_BLANK
     const placeholderCount = countPlaceholders(q.question || "");
     if (placeholderCount === 0) return false;
     const answers = getFillBlankAnswers(q.answer);
@@ -369,7 +349,6 @@ function showQuestion() {
         return;
     }
 
-    // Nếu câu không hợp lệ -> bỏ qua, sang câu kế tiếp
     if (!isValidQuestion(q)) {
         console.warn("Bỏ qua câu hỏi không hợp lệ:", q && q.id, q && q.dang);
         currentQuestion++;
@@ -381,12 +360,10 @@ function showQuestion() {
         return;
     }
 
-    // Đảm bảo có state
     if (!answeredState[currentQuestion]) {
         answeredState[currentQuestion] = createEmptyState(q);
     }
 
-    // Đánh dấu đã học
     markAsLearned(q.id);
 
     const type = getQuestionType(q);
@@ -438,9 +415,7 @@ function createStudyHeader(q) {
 
 
 /* =====================================
-   BOTTOM NAV - LUÔN HIỂN THỊ
-   - "Câu trước" disable khi ở câu đầu
-   - "Câu tiếp theo" luôn active
+   BOTTOM NAV
 ===================================== */
 
 function createBottomNav() {
@@ -539,7 +514,6 @@ function renderMCQ(q, state) {
         </div>
     `;
 
-    // Nếu đã check -> render luôn explanation
     if (state.checked) {
         renderMCQExplanation(q, state);
     }
@@ -553,7 +527,6 @@ function selectMCQAnswer(index, event) {
 
     state.selectedIndex = index;
 
-    // Cập nhật UI
     document.querySelectorAll(".answer-choice").forEach((btn, i) => {
         btn.classList.toggle("selected", i === index);
     });
@@ -577,7 +550,6 @@ function checkMCQAnswer(event) {
     state.isCorrect = isCorrect;
     state.checked = true;
 
-    // Đánh dấu lại UI
     document.querySelectorAll(".answer-choice").forEach((btn, i) => {
         btn.disabled = true;
         btn.classList.remove("selected");
@@ -639,20 +611,13 @@ function renderFillBlank(q, state) {
     const app = document.getElementById("app");
     if (!app) return;
 
-    const questionHTML = formatText(q.question);
     const correctAnswers = getFillBlankAnswers(q.answer);
-
-    // Tách câu hỏi thành 2 phần:
-    // - Phần đầu: câu hỏi dẫn
-    // - Phần sau: đoạn có {{n}}
     const parts = splitFillBlankQuestion(q.question);
 
-    // Người dùng đã nhập -> khôi phục
     if (!state.userAnswers || state.userAnswers.length !== correctAnswers.length) {
         state.userAnswers = new Array(correctAnswers.length).fill("");
     }
 
-    // Xây đoạn trả lời có input
     const answerHTML = buildFillBlankAnswerHTML(
         parts.answerTemplate,
         state.userAnswers,
@@ -660,7 +625,6 @@ function renderFillBlank(q, state) {
         state.results
     );
 
-    // Đoạn đáp án đúng (chỉ hiện khi checked)
     const dapAnHTML = state.checked
         ? buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers)
         : "";
@@ -671,11 +635,13 @@ function renderFillBlank(q, state) {
         ${createStudyHeader(q)}
         <div class="interactive-card">
 
+            <!-- KHỐI CÂU HỎI -->
             <div class="fill-blank-cau-hoi">
                 <div class="card-label">CÂU HỎI</div>
                 <div class="fill-blank-cau-hoi-text">${parts.questionPart}</div>
             </div>
 
+            <!-- KHỐI TRẢ LỜI -->
             <div class="fill-blank-tra-loi">
                 <div class="card-label">TRẢ LỜI</div>
                 <div class="fill-blank-tra-loi-text" id="fillBlankAnswerArea">
@@ -701,37 +667,39 @@ function renderFillBlank(q, state) {
         </div>
     `;
 
-    // Gắn sự kiện cho các input
     attachFillBlankInputs(q, state);
 
-    // Khôi phục trạng thái checked
     if (state.checked) {
         renderFillBlankExplanation(q, state);
         lockFillBlankInputs(state);
     }
 }
 
-/** Tách question thành 2 phần: dẫn + đoạn có {{n}} */
+/** Tách question thành 2 phần: câu hỏi dẫn + đoạn có {{n}} */
 function splitFillBlankQuestion(question) {
     const text = String(question ?? "");
 
-    // Tìm vị trí {{1}} đầu tiên
     const match = text.match(/\{\{1\}\}/);
     if (!match) {
-        return { questionPart: escapeHTML(text), answerTemplate: "" };
+        return {
+            questionPart: formatText(text),
+            answerTemplate: "",
+        };
     }
 
-    // Tìm đoạn "Đáp án:" phía trước để loại bỏ khỏi phần câu hỏi
     let questionPartRaw = text.slice(0, match.index);
     let answerTemplate = text.slice(match.index);
 
-    // Nếu questionPart chứa "Đáp án:" -> cắt bỏ
     const dapAnIdx = questionPartRaw.lastIndexOf("Đáp án:");
     if (dapAnIdx !== -1) {
         questionPartRaw = questionPartRaw.slice(0, dapAnIdx);
     }
 
     questionPartRaw = questionPartRaw.trim();
+
+    if (!questionPartRaw) {
+        questionPartRaw = "Điền vào chỗ trống:";
+    }
 
     return {
         questionPart: formatText(questionPartRaw),
@@ -749,10 +717,9 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
     let match;
 
     while ((match = regex.exec(template)) !== null) {
-        // Text trước placeholder
         html += escapeHTML(template.slice(lastIndex, match.index));
 
-        const idx = parseInt(match[1], 10) - 1; // 0-based
+        const idx = parseInt(match[1], 10) - 1;
         const val = userAnswers[idx] || "";
 
         let inputCls = "fill-blank-inline-input";
@@ -766,7 +733,6 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
                 : '<span class="fill-blank-inline-status fill-status-wrong">✗</span>';
         }
 
-        // QUAN TRỌNG: viết liền không xuống dòng, không khoảng trắng thừa
         html += '<span class="fill-blank-inline" data-index="' + idx + '">'
               + '<input type="text"'
               + ' class="' + inputCls + '"'
@@ -785,7 +751,6 @@ function buildFillBlankAnswerHTML(template, userAnswers, checked, results) {
 
     html += escapeHTML(template.slice(lastIndex));
 
-    // Đổi \n thành <br> cho xuống dòng
     return html.replace(/\n/g, "<br>");
 }
 
@@ -817,7 +782,6 @@ function buildFillBlankDapAnHTML(template, correctAnswers) {
     `;
 }
 
-/** Gắn sự kiện input + Enter cho FILL_BLANK */
 function attachFillBlankInputs(q, state) {
     const inputs = document.querySelectorAll(".fill-blank-inline-input");
     if (!inputs.length) return;
@@ -829,7 +793,6 @@ function attachFillBlankInputs(q, state) {
 
             state.userAnswers[idx] = val;
 
-            // Cập nhật trạng thái nút KIỂM TRA
             const checkBtn = document.getElementById("fillCheckButton");
             if (checkBtn) {
                 checkBtn.disabled = state.checked || !hasAnyInput(state.userAnswers);
@@ -839,7 +802,6 @@ function attachFillBlankInputs(q, state) {
         input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
-                // Nếu chưa checked và có ít nhất 1 ô nhập -> kiểm tra
                 if (!state.checked && hasAnyInput(state.userAnswers)) {
                     checkFillBlankAnswer(e);
                 }
@@ -871,13 +833,11 @@ function checkFillBlankAnswer(event) {
     const correctAnswers = getFillBlankAnswers(q.answer);
     const inputs = document.querySelectorAll(".fill-blank-inline-input");
 
-    // Cập nhật state từ DOM
     inputs.forEach(inp => {
         const idx = Number(inp.dataset.index);
         state.userAnswers[idx] = inp.value;
     });
 
-    // So sánh
     state.results = correctAnswers.map((ans, i) => {
         const user = state.userAnswers[i] || "";
         return normalizeAnswer(user) === normalizeAnswer(ans);
@@ -894,14 +854,12 @@ function checkFillBlankAnswer(event) {
         }
     }
 
-    // Cập nhật UI input + tick
     inputs.forEach(inp => {
         const idx = Number(inp.dataset.index);
         inp.disabled = true;
         inp.classList.remove("correct-input", "wrong-input");
         inp.classList.add(state.results[idx] ? "correct-input" : "wrong-input");
 
-        // Thêm tick cạnh input
         const wrapper = inp.closest(".fill-blank-inline");
         if (wrapper) {
             const oldStatus = wrapper.querySelector(".fill-blank-inline-status");
@@ -916,18 +874,15 @@ function checkFillBlankAnswer(event) {
         }
     });
 
-    // Disable nút KIỂM TRA
     const checkBtn = document.getElementById("fillCheckButton");
     if (checkBtn) checkBtn.disabled = true;
 
-    // Render khối ĐÁP ÁN
     const parts = splitFillBlankQuestion(q.question);
     const dapAnBox = document.getElementById("fillDapAn");
     if (dapAnBox) {
         dapAnBox.innerHTML = buildFillBlankDapAnHTML(parts.answerTemplate, correctAnswers);
     }
 
-    // Render giải thích + note
     renderFillBlankExplanation(q, state);
 }
 
@@ -1064,7 +1019,6 @@ function showNotLearned() {
     if (app) app.innerHTML = html;
 }
 
-/** Cắt bỏ phần "Đáp án:" trong câu hỏi FILL_BLANK để hiển thị gọn */
 function stripFillBlank(q) {
     const type = getQuestionType(q);
     if (type !== "FILL_BLANK") return q.question || "";
@@ -1139,104 +1093,4 @@ function renderSearchResultsHTML() {
         html += `
             <div class="search-result" onclick="openSearchResult(${index})">
                 <div class="search-result-subject">${escapeHTML(q.mon)}</div>
-                <div class="search-result-question">${formatText(stripFillBlank(q))}</div>
-            </div>
-        `;
-    });
-
-    return html;
-}
-
-function performSearch() {
-    const input = document.getElementById("searchInput");
-    if (!input) return;
-
-    searchKeyword = input.value.trim();
-    const keyword = normalizeText(searchKeyword);
-
-    const results = keyword === ""
-        ? []
-        : questions.filter(q => {
-            const question = normalizeText(q.question || "");
-            const answer = normalizeText(q.answer || "");
-            const explanation = normalizeText(q.explanation || "");
-            return question.includes(keyword)
-                || answer.includes(keyword)
-                || explanation.includes(keyword);
-        });
-
-    searchResults = results;
-
-    const container = document.getElementById("searchResults");
-    if (container) container.innerHTML = renderSearchResultsHTML();
-}
-
-function openSearchResult(index) {
-    selectedQuestions = searchResults;
-    currentQuestion = index;
-    returnToSearch = true;
-    answeredState = {};
-    showQuestion();
-}
-
-
-/* =====================================
-   HELPERS - PARSE
-===================================== */
-
-/** Tách choices thành mảng */
-function getChoices(choices) {
-    if (choices === null || choices === undefined) return [];
-    return String(choices)
-        .split(/\r?\n/)
-        .map(c => c.trim())
-        .filter(c => c !== "");
-}
-
-/** Tách answer FILL_BLANK theo " | " */
-function getFillBlankAnswers(answer) {
-    if (answer === null || answer === undefined) return [];
-    return String(answer)
-        .split("|")
-        .map(a => a.trim())
-        .filter(a => a !== "");
-}
-
-/** Đếm số {{n}} */
-function countPlaceholders(question) {
-    const matches = String(question || "").match(/\{\{\d+\}\}/g);
-    return matches ? matches.length : 0;
-}
-
-
-/* =====================================
-   HELPERS - NORMALIZE / FORMAT
-===================================== */
-
-function normalizeAnswer(text) {
-    return normalizeText(text)
-        .replace(/\s+/g, " ")
-        .trim();
-}
-
-function normalizeText(text) {
-    return String(text ?? "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d");
-}
-
-function formatText(text) {
-    if (text === null || text === undefined) return "";
-    return escapeHTML(String(text)).replace(/\n/g, "<br>");
-}
-
-function escapeHTML(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+                <div class="search-result-question">${formatText(stripFillBlank(q))

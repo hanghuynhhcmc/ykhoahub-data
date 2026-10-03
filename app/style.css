@@ -369,9 +369,10 @@ button:disabled { cursor: default; }
 }
 .answer-choice.wrong .choice-tick::before { content: "✗"; }
 
+/* ✅ NÚT KIỂM TRA Ở GIỮA */
 .mcq-actions {
     margin-top: 16px;
-    text-align: right;
+    text-align: center;
 }
 
 
@@ -381,7 +382,7 @@ button:disabled { cursor: default; }
 .check-answer-button {
     flex: 0 0 auto;
     min-height: 48px;
-    padding: 0 22px;
+    padding: 0 32px;
     border: 0;
     border-radius: 10px;
     background: #2563eb;
@@ -453,9 +454,7 @@ button:disabled { cursor: default; }
     padding: 16px;
     overflow-wrap: anywhere;
     word-break: break-word;
-    /* Thêm 2 dòng này để không bị đẩy xuống dòng */
     white-space: normal;
-    line-height: 2.1;
 }
 
 .fill-blank-inline {
@@ -464,7 +463,6 @@ button:disabled { cursor: default; }
     margin: 0 2px;
     vertical-align: middle;
     align-items: center;
-    /* Thêm 2 dòng này để không bị đẩy xuống dòng */
     white-space: nowrap;
     line-height: 1;
 }
@@ -476,10 +474,12 @@ button:disabled { cursor: default; }
     border: 1px solid #d1d5db;
     border-radius: 6px;
     text-align: center;
-    height: 32px;
+    height: 30px;
     font-size: 15px;
+    line-height: 1;
     background: #ffffff;
     outline: none;
+    vertical-align: middle;
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 .fill-blank-inline-input:focus {
@@ -505,9 +505,10 @@ button:disabled { cursor: default; }
 .fill-status-correct { color: #22c55e; }
 .fill-status-wrong { color: #ef4444; }
 
+/* ✅ NÚT KIỂM TRA Ở GIỮA */
 .fill-blank-actions {
     margin-top: 16px;
-    text-align: right;
+    text-align: center;
 }
 
 .fill-dap-an {
@@ -814,6 +815,7 @@ button:disabled { cursor: default; }
     .mcq-actions,
     .fill-blank-actions {
         margin-top: 12px;
+        text-align: center;
     }
     .check-answer-button {
         width: 100%;
@@ -823,12 +825,12 @@ button:disabled { cursor: default; }
 
     .fill-blank-tra-loi-text {
         padding: 14px 12px;
-        line-height: 2;
+        line-height: 1.8;
     }
     .fill-blank-inline-input {
         min-width: 100px;
         max-width: 160px;
-        height: 30px;
+        height: 28px;
         font-size: 14px;
         padding: 3px 8px;
     }
