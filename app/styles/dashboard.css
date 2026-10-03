@@ -196,87 +196,32 @@
 
 
 /* =====================================
-   MENU BUTTONS — tất cả trắng, xám
+   SEARCH BUTTON — accent duy nhất
 ===================================== */
-.menu-section {
-    width: 100%;
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
 .search-home-section {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 16px;
 }
 
-.menu-button {
+.search-home-button {
     width: 100%;
     min-height: 48px;
     border-radius: 10px;
-    padding: 10px 16px;
-    font-weight: 500;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    color: #334155;
-}
-
-.menu-button:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
-}
-
-.menu-icon {
-    flex: 0 0 24px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    opacity: 0.7;
-}
-
-.menu-label {
-    flex: 1;
-    text-align: left;
-    color: #475569;
-}
-
-.menu-badge {
-    flex: 0 0 auto;
-    min-width: 28px;
-    height: 22px;
-    padding: 0 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #64748b;
-}
-
-/* Nút tìm kiếm — accent duy nhất */
-.search-home-button {
+    padding: 12px 20px;
     background: #2563eb;
     border: none;
     color: #ffffff;
-    justify-content: center;
     font-weight: 600;
+    font-size: 13px;
     letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
 }
 
 .search-home-button:hover {
     background: #1d4ed8;
-    border: none;
 }
 
 
@@ -339,25 +284,5 @@
     .dashboard-add-select {
         min-height: 28px;
         font-size: 10px;
-    }
-
-    .menu-button {
-        min-height: 46px;
-        font-size: 12.5px;
-        padding: 10px 14px;
-        gap: 10px;
-    }
-
-    .menu-icon {
-        flex-basis: 22px;
-        width: 22px;
-        height: 22px;
-        font-size: 13px;
-    }
-
-    .menu-badge {
-        min-width: 26px;
-        height: 20px;
-        font-size: 10.5px;
     }
 }
