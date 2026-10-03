@@ -1,51 +1,96 @@
 /* =====================================
-   ANALYTICS - GHI LOG HOẠT ĐỘNG
+   AUTH - XÁC THỰC NGƯỜI DÙNG
 ===================================== */
 
 import { supabaseClient } from './config.js';
 import { state } from './state.js';
 
 
-export async function logEvent(eventType, data = {}) {
-    if (!state.currentUser) return;
+/* =====================================
+   KIỂM TRA SESSION + TẢI USER
+===================================== */
 
+/**
+ * Kiểm tra session đăng nhập hiện tại
+ * Trả về user nếu đã đăng nhập, null nếu chưa
+ */
+export async function checkAuthAndLoad() {
     try {
-        await supabaseClient
-            .from("user_events")
-            .insert({
-                user_id: state.currentUser.id,
-                event_type: eventType,
-                subject: data.subject || null,
-                question_id: data.questionId ? String(data.questionId) : null,
-                is_correct: typeof data.isCorrect === "boolean" ? data.isCorrect : null,
-                detail: data.detail || null,
-            });
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+        if (error) throw error;
+
+        if (session && session.user) {
+            state.currentUser = session.user;
+        } else {
+            state.currentUser = null;
+        }
+
+        return state.currentUser;
     } catch (err) {
-        console.log("Không ghi được event:", err);
+        console.log("Không kiểm tra được auth:", err);
+        state.currentUser = null;
+        return null;
     }
 }
 
 
-export function logSignup() {
-    return logEvent("signup");
+/* =====================================
+   ĐĂNG NHẬP / ĐĂNG KÝ / ĐĂNG XUẤT
+===================================== */
+
+/**
+ * Đăng nhập bằng email + password
+ */
+export async function signIn(email, password) {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+    });
+    if (error) throw error;
+    state.currentUser = data.user;
+    return data.user;
 }
 
-export function logLogin() {
-    return logEvent("login");
+
+/**
+ * Đăng ký tài khoản mới
+ */
+export async function signUp(email, password) {
+    const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+    });
+    if (error) throw error;
+    state.currentUser = data.user;
+    return data.user;
 }
 
-export function logLogout() {
-    return logEvent("logout");
+
+/**
+ * Đăng xuất
+ */
+export async function signOut() {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+    state.currentUser = null;
 }
 
-export function logStartQuiz(subject) {
-    return logEvent("start_quiz", { subject });
+
+/* =====================================
+   HELPERS
+===================================== */
+
+/**
+ * Lấy user hiện tại (đồng bộ, không gọi API)
+ */
+export function getCurrentUser() {
+    return state.currentUser;
 }
 
-export function logAnswer(questionId, subject, isCorrect) {
-    return logEvent("answer", { questionId, subject, isCorrect });
-}
-
-export function logSearch(keyword) {
-    return logEvent("search", { detail: keyword });
+/**
+ * Kiểm tra đã đăng nhập chưa
+ */
+export function isLoggedIn() {
+    return !!state.currentUser;
 }
